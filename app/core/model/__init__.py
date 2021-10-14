@@ -1,5 +1,5 @@
-from app.core.model.event import Event
+from app.core.model.eventHandler import EventHandler
 
 __all__ = [
-    Event.__name__
+    EventHandler.__name__
 ]

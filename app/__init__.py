@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_restful import Api
-from app.api import configure_apis
+from app.resources import configure_apis
 from app.core.db_base import configure_db
 from app.core.config import db_uri
 
