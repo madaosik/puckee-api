@@ -28,7 +28,7 @@ class Event(Resource):
 class EventUpdater(Event):
     @staticmethod
     def get(event_id: int):
-        return EventHandler.get_by_id(event_id)
+        return EventHandler.get_by_id(event_id).json()
 
     @staticmethod
     def delete(event_id: int):

@@ -1,6 +1,7 @@
 version: '3'
 services:
     api:
+        image: madaosik/teamorg-repo
         container_name: api-cont
         build: .
         environment:
@@ -13,10 +14,12 @@ services:
             - db
         depends_on:
             - db
-        ports:
-            - "8000:8000"
+        #ports:
+        #    - "8000:8000"
         volumes:
             - .:/api
+        ports:
+            - "80:80"
     db:
         image: mysql:5.7
         container_name: flask_mysql

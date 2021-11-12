@@ -1,0 +1,53 @@
+version: '3'
+services:
+    db:
+        image: mysql:5.7
+        environment:
+            MYSQL_ROOT_PASSWORD: my_secret_password
+            MYSQL_DATABASE: server_db
+            MYSQL_USER: user
+            MYSQL_PASSWORD: password
+        ports:
+            #- "6033:3306"
+            - "3306:3306"
+#            - "3306"
+        volumes:
+            #- dbdata:/var/lib/mysql
+            - /var/lib/mysql
+        logging:
+            driver: awslogs
+            options:
+                awslogs-group: teamorg-api-config
+                awslogs-region: eu-central-1
+                awslogs-stream-prefix: db
+    api:
+        image: madaosik/teamorg-repo
+        environment:
+            DEV_MODE: 1
+            DB_USER: root
+            DB_PASSWORD: my_secret_password
+            DB_HOST: 127.0.0.1:3306
+            DB_NAME: server_db
+#        links:
+#            - db
+#        depends_on:
+#            - db
+        #ports:
+        #    - "8000:8000"
+#        volumes:
+            #- .:/api
+#            - /api
+        ports:
+            - "80:80"
+#            - "22:22"
+#            - "80"
+        logging:
+            driver: awslogs
+            options:
+                awslogs-group: teamorg-api-config
+                awslogs-region: eu-central-1
+                awslogs-stream-prefix: api
+
+#volumes:
+#    dbdata:
+
