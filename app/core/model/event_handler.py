@@ -19,7 +19,7 @@ class Attendee:
 
     def fetch_all(self, event_id: int):
         if self.role == AttendeeRole.PLAYER:
-            attendees = AthleteModel.query.filter(AthleteModel.events_attended.any(id=event_id)).all()
+            attendees = AthleteModel.query.filter(AthleteModel.events_played.any(id=event_id)).all()
         elif self.role == AttendeeRole.ORGANIZER:
             attendees = AthleteModel.query.filter(AthleteModel.events_organized.any(id=event_id)).all()
         elif self.role == AttendeeRole.GOALIE:
@@ -47,7 +47,7 @@ class Attendee:
         event = EventHandler.fetch_by_id(event_id)
         if self.role == AttendeeRole.PLAYER:
             athlete = AthleteModel.query \
-                .filter(AthleteModel.events_attended.any(id=event_id)).filter_by(id=athlete_id) \
+                .filter(AthleteModel.events_played.any(id=event_id)).filter_by(id=athlete_id) \
                 .first_or_404(description='Athlete with id {} is not attending the event {}'.format(athlete_id, event_id))
             event.players.remove(athlete)
         elif self.role == AttendeeRole.ORGANIZER:
@@ -139,3 +139,29 @@ class EventHandler:
             event_json['referees'] = [o.id for o in referees]
 
         return event_json
+
+    @staticmethod
+    def add_participant(event_id: int, data: dict):
+        if data['athlete_role'] == 'player':
+            return EventHandler.players.add(event_id, data['athlete_id'])
+        elif data['athlete_role'] == 'organizer':
+            return EventHandler.organizers.add(event_id, data['athlete_id'])
+        elif data['athlete_role'] == 'goalie':
+            return EventHandler.goalies.add(event_id, data['athlete_id'])
+        elif data['athlete_role'] == 'referee':
+            return EventHandler.referees.add(event_id, data['athlete_id'])
+        else:
+            return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404
+
+    @staticmethod
+    def delete_participant(event_id: int, data: dict):
+        if data['athlete_role'] == 'player':
+            return EventHandler.players.delete(event_id, data['athlete_id'])
+        elif data['athlete_role'] == 'organizer':
+            return EventHandler.organizers.delete(event_id, data['athlete_id'])
+        elif data['athlete_role'] == 'goalie':
+            return EventHandler.goalies.delete(event_id, data['athlete_id'])
+        elif data['athlete_role'] == 'referee':
+            return EventHandler.referees.delete(event_id, data['athlete_id'])
+        else:
+            return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404

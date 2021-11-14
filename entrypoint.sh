@@ -6,7 +6,7 @@ if ! [ -v DEV_MODE ]; then
   exit 0
 fi
 
-#echo "-- Making sure the database is up-to-date --"
+echo "-- Making sure the database is up-to-date --"
 cd /api/app
 alembic upgrade head
 cd ..

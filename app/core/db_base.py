@@ -7,7 +7,7 @@ session = sqlDb.session
 
 def configure_db(app):
     db = SQLAlchemy(app)
-    Migrate(app, db)
+    # Migrate(app, db)
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):

@@ -1,18 +1,18 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, TIMESTAMP, func, ForeignKey
-from sqlalchemy.types import DateTime
+from sqlalchemy.types import DateTime, Time
 from flask import jsonify
 
 from werkzeug.security import generate_password_hash
 import json
-from datetime import datetime
+from datetime import datetime, time
 
-DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 DURATION_FORMAT = '%H:%M:%S'
 
 sqlDb: SQLAlchemy = SQLAlchemy(session_options={"autoflush": True})
 
-event_attendees = sqlDb.Table('event_attendees',
+event_players = sqlDb.Table('event_players',
                               Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
                               Column('event_id', Integer, ForeignKey('event.id'), primary_key=True),
                               )
@@ -40,9 +40,9 @@ class EventModel(sqlDb.Model):
     name = Column(String(30))
     total_places = Column(Integer)
     start = Column(DateTime)
-    duration = Column(DateTime)
-    players = sqlDb.relationship('AthleteModel', secondary=event_attendees, lazy='subquery',
-                                 backref=sqlDb.backref('events_attended', lazy=True))
+    duration = Column(Time)
+    players = sqlDb.relationship('AthleteModel', secondary=event_players, lazy='subquery',
+                                 backref=sqlDb.backref('events_played', lazy=True))
     organizers = sqlDb.relationship('AthleteModel', secondary=event_organizers, lazy='subquery',
                                     backref=sqlDb.backref('events_organized', lazy=True))
     goalies = sqlDb.relationship('AthleteModel', secondary=event_goalies, lazy='subquery',
@@ -57,14 +57,16 @@ class EventModel(sqlDb.Model):
         self.__dict__.update(kwargs)
 
     def json(self):
+        creation_time_formatted = self.time_created.isoformat()
+        last_update_formatted = self.last_update.isoformat()
         return {"id": self.id,
                 "name": self.name,
                 "total_places": self.total_places,
                 "start": datetime.strftime(self.start, DATETIME_FORMAT),
-                "duration": datetime.strftime(self.duration, DURATION_FORMAT),
+                "duration": time.strftime(self.duration, DURATION_FORMAT),
                 "exp_level": self.exp_level,
-                "creation_time": json.dumps(self.time_created, indent=4, sort_keys=True, default=str),
-                "last_updated": json.dumps(self.last_update, indent=4, sort_keys=True, default=str)
+                "creation_time": creation_time_formatted,
+                "last_updated": last_update_formatted
                 }
 
 
@@ -95,12 +97,17 @@ class AthleteModel(sqlDb.Model):
         self.email = email
 
     def json(self):
+        try:
+            formatted_last_login = self.last_login.isoformat()
+        except AttributeError:
+            formatted_last_login = 'null'
+        formatted_last_update = self.last_modified.isoformat().strip('"')
         return {"id": self.id,
                 "login": self.login,
                 "name": self.name,
                 "email": self.email,
-                "last_login": json.dumps(self.last_login, indent=4, sort_keys=True, default=str),
-                "last_update": json.dumps(self.last_modified, indent=4, sort_keys=True, default=str)
+                "last_login": formatted_last_login,
+                "last_update": formatted_last_update
                 }
 
 

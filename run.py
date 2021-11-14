@@ -3,10 +3,9 @@ from app import create_app
 app = create_app()
 
 if __name__ == "__main__":
-    # app.run(template_folder='webapp/templates', debug=True)
-    # app.run(host="0.0.0.0", debug=True)
-    #app.run(host="0.0.0.0", port=80)
+    # Use this line for deployment purposes
+    app.run(host="0.0.0.0", port=80)
 
     # Use this line for local debugging purposes
-    app.run(host="0.0.0.0", debug=True)
+    #app.run(host="0.0.0.0", debug=True)
 
