@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash
 import random
 from datetime import datetime, timedelta
 
-from app.core.model.models import DATETIME_FORMAT, DURATION_FORMAT, \
+from app.core.model.models import DATETIME_FORMAT, DURATION_FORMAT, EVENT_NAME_LEN_LIMIT, \
     AthleteModel, AthleteRoleModel, athlete_roles, EventModel, \
     event_players, event_organizers, event_goalies, event_referees
 
@@ -68,9 +68,16 @@ def seed_data():
         exp_level = random.randrange(1, 7)
 
         start_time = fake.date_time_between(start_date=datetime(2021, 11, 30, 00, 00, 00),
-                                            end_date=datetime(2022, 12, 31, 00, 00, 00))
+                                            end_date=datetime(2022, 1, 31, 00, 00, 00))
         start_time_rounded = start_time + (datetime.min - start_time) % timedelta(minutes=15)
-        event = {'name': fake.last_name_male() + '-game',
+        while True:
+            event_name = fake.catch_phrase()
+            if len(event_name) < EVENT_NAME_LEN_LIMIT:
+                break
+            else:
+                event_name = fake.catch_phrase()
+
+        event = {'name': event_name,
                  'total_places': random.randrange(2, 4)*10,
                  'start': start_time_rounded,
                  'duration': datetime.strptime(duration, DURATION_FORMAT),

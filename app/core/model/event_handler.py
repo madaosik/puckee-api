@@ -1,7 +1,8 @@
-from app.core.model.models import EventModel, AthleteModel, DATETIME_FORMAT, DURATION_FORMAT
+from app.core.model.models import EventModel, AthleteModel, DATETIME_FORMAT, DURATION_FORMAT, DATESPAN_FORMAT
 # from app.core.model import AthleteHandler
 from app.core.db_base import session
 from sqlalchemy import exc as e
+from sqlalchemy import asc
 from datetime import datetime
 from enum import Enum
 
@@ -84,6 +85,19 @@ class EventHandler:
     def fetch_by_id(event_id: int):
         return EventModel.query.filter_by(id=event_id)\
             .first_or_404(description='Event with id {} is not available'.format(event_id))
+
+    @staticmethod
+    def fetch_by_date(data: dict):
+        """
+        Returns a list of events in a given timeframe, ordered by datetime
+        @param data: A dictionary containing keys 'start_date' and 'end_date'
+        @return: List(EventModel)
+        """
+        start_timestamp = datetime.strptime(data['start_date'], DATESPAN_FORMAT)
+        end_timestamp = datetime.strptime(data['end_date'], DATESPAN_FORMAT).replace(hour=23, minute=59)
+        return EventModel.query.filter(EventModel.start <= end_timestamp)\
+            .filter(EventModel.start >= start_timestamp)\
+            .order_by(asc(EventModel.start))
 
     @staticmethod
     def add(organizer: AthleteModel, data: dict):

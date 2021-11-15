@@ -11,8 +11,8 @@ Athlete (user in general) creation or retrieval
 
 ### /api/event
 Events creation/retrieval
-- **GET**
-- **POST**
+- **GET** - returns all the events in the database
+- **POST** - creates a new event
   - Requires:
     - *'name'*
     - *'organizer_id'*
@@ -20,6 +20,12 @@ Events creation/retrieval
     - *'start'* - start of the event in format '**YYYY-MM-DD**T**HH:MM:SS**'
     - *'duration'* - duration of the event in format '**HH:MM:SS**'
     - *'exp_level'* - integer value from 1 to 6
+
+### /api/event/date
+- **GET** - return all the events in a given timeframe, specifically from *YYYY-MM-DD 00:00:00* to *YYYY-MM-DD 23:59:00* 
+  - Requires:
+    - *'start_date'* - format 'YYYY-MM-DD'
+    - *'end_date'* - format 'YYYY-MM-DD'
 
 ### /api/event/<event_id>
 Specific event update/removal

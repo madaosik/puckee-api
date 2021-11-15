@@ -9,6 +9,8 @@ from datetime import datetime, time
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 DURATION_FORMAT = '%H:%M:%S'
+DATESPAN_FORMAT = '%Y-%m-%d'
+EVENT_NAME_LEN_LIMIT = 25
 
 sqlDb: SQLAlchemy = SQLAlchemy(session_options={"autoflush": True})
 
@@ -37,7 +39,7 @@ class EventModel(sqlDb.Model):
     __tablename__ = 'event'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(30))
+    name = Column(String(EVENT_NAME_LEN_LIMIT))
     total_places = Column(Integer)
     start = Column(DateTime)
     duration = Column(Time)

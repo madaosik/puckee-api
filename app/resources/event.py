@@ -4,7 +4,7 @@ from flask import current_app as app
 
 
 class Event(Resource):
-    parser = reqparse.RequestParser()  # only allow changes to the count of places, no name changes allowed
+    parser = reqparse.RequestParser()
     parser.add_argument('name', type=str, required=True,
                         help='Provide name of the event in \'name\'')
     parser.add_argument('organizer_id', type=int, required=True,
@@ -28,6 +28,21 @@ class Event(Resource):
         data = Event.parser.parse_args()
         organizer = AthleteHandler.fetch_by_id(data['organizer_id'])
         return EventHandler.add(organizer, data)
+
+
+class EventByDate(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('start_date', type=str, required=True,
+                        help='Provide the start date of the requested period in \'start_date\' in format \'YYYY-MM-DD\'')
+    parser.add_argument('end_date', type=str, required=True,
+                        help='Provide the end date of the requested period in \'end_date\' in format \'YYYY-MM-DD\'')
+
+    @staticmethod
+    def get():
+        print("cus")
+        app.logger.info(f'parsed args: {EventByDate.parser.parse_args()}') #a
+        data = EventByDate.parser.parse_args()
+        return [EventHandler.json_full(event, att_details=False) for event in EventHandler.fetch_by_date(data)]
 
 
 class EventUpdater(Event):
@@ -77,5 +92,6 @@ class EventParticipants(Resource):
 
 def configure(api):
     api.add_resource(Event, '/api/event')
+    api.add_resource(EventByDate, '/api/event/date')
     api.add_resource(EventUpdater, '/api/event/<event_id>')
     api.add_resource(EventParticipants, '/api/event/<event_id>/participants')
