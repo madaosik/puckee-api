@@ -77,10 +77,14 @@ def seed_data():
             else:
                 event_name = fake.catch_phrase()
 
+        locations = ['Sportcentrum Lužánky', 'winninggroup Arena', 'TJ Stadion Brno', 'Hokejová hala Úvoz']
+        location = random.choice(locations)
+
         event = {'name': event_name,
                  'total_places': random.randrange(2, 4)*10,
                  'start': start_time_rounded,
                  'duration': datetime.strptime(duration, DURATION_FORMAT),
+                 'location': location,
                  'exp_level': exp_level
                  }
         events.append(event)

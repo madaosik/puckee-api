@@ -1,16 +1,16 @@
 """Basic DB scheme
 
-Revision ID: 98d19e3816d3
+Revision ID: 8a0f1c8091c9
 Revises: 
-Create Date: 2021-11-14 13:24:06.698664
+Create Date: 2021-11-15 17:16:52.217395
 
 """
 from alembic import op
 import sqlalchemy as sa
-from app.core.model.seed import seed_data
+
 
 # revision identifiers, used by Alembic.
-revision = '98d19e3816d3'
+revision = '8a0f1c8091c9'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -35,8 +35,9 @@ def upgrade():
     )
     op.create_table('event',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('name', sa.String(length=30), nullable=True),
+    sa.Column('name', sa.String(length=25), nullable=True),
     sa.Column('total_places', sa.Integer(), nullable=True),
+    sa.Column('location', sa.String(length=40), nullable=True),
     sa.Column('start', sa.DateTime(), nullable=True),
     sa.Column('duration', sa.Time(), nullable=True),
     sa.Column('exp_level', sa.Integer(), nullable=True),
@@ -80,6 +81,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('athlete_id', 'event_id')
     )
     # ### end Alembic commands ###
+
+    from app.core.model.seed import seed_data
     seed_data()
 
 

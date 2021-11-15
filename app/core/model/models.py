@@ -41,6 +41,7 @@ class EventModel(sqlDb.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(EVENT_NAME_LEN_LIMIT))
     total_places = Column(Integer)
+    location = Column(String(40))
     start = Column(DateTime)
     duration = Column(Time)
     players = sqlDb.relationship('AthleteModel', secondary=event_players, lazy='subquery',
@@ -64,6 +65,7 @@ class EventModel(sqlDb.Model):
         return {"id": self.id,
                 "name": self.name,
                 "total_places": self.total_places,
+                "location": self.location,
                 "start": datetime.strftime(self.start, DATETIME_FORMAT),
                 "duration": time.strftime(self.duration, DURATION_FORMAT),
                 "exp_level": self.exp_level,
