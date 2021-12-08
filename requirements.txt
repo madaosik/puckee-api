@@ -6,3 +6,6 @@ alembic
 pymysql
 flask-restful
 faker
+flask-cors
+flask-jwt-extended
+Werkzeug

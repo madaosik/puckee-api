@@ -1,6 +1,7 @@
-from app.core.model.models import AthleteModel
+from app.core.model.models import AthleteModel, AthleteRoleModel
 from app.core.db_base import session
 from sqlalchemy import exc as e
+from werkzeug.security import check_password_hash
 
 
 class AthleteHandler:
@@ -9,29 +10,66 @@ class AthleteHandler:
         return AthleteModel.query.all()
 
     @staticmethod
-    def fetch_by_id(athlete_id):
-        return AthleteModel.query.filter_by(id=athlete_id)\
-                .first_or_404(description='Athlete with id={} is not available'.format(athlete_id))
+    def fetch(**kwargs):
+        if 'id' in kwargs:
+            return AthleteModel.query.filter_by(id=kwargs.get('id')).first()
+        elif 'email' in kwargs:
+            return AthleteModel.query.filter_by(email=kwargs.get('email')).first()
+        else:
+            raise ValueError("Unexpected argument has been provided to the fetch function - expected 'id' or 'login'")
 
     @staticmethod
-    def add(athlete):
+    def is_verified(data: dict):
+        athlete = AthleteHandler.fetch(email=data['email'])
+        if athlete is None:
+            return False
+
+        return True if check_password_hash(athlete.password_hash, data['password']) else False
+
+    @staticmethod
+    def add(data: dict):
+        if AthleteHandler.fetch(email=data['email']):
+            return {"message": 'Athlete with registration email \'{}\' already exists!'.format(data['email'])}, 400
+
+        athlete = AthleteModel(data['email'], data['password'], data['name'], data['perf_level'])
+
+        # Every registered athlete is a user
+        user_role = AthleteRoleModel.query.filter_by(id=1).first()
+        athlete.roles.append(user_role)
+        for role_id in data['roles']:
+            role = AthleteRoleModel.query.filter_by(id=role_id) \
+                .first_or_404(description='Role with id={} is not available'.format(role_id))
+            athlete.roles.append(role)
+
         try:
             session.add(athlete)
             session.commit()
         except e.SQLAlchemyError:
-            return {"message": "An error occurred creating the athlete."}, 500
-        return athlete.json(), 201
+            return {"message": "An internal error occurred during registration, please try again!"}, 500
+        return AthleteHandler.json_full(athlete), 201
 
     @staticmethod
     def delete(athlete_id: int):
-        athlete = AthleteHandler.fetch_by_id(athlete_id)
+        athlete = AthleteHandler.fetch(id=athlete_id)
         session.delete(athlete)
         session.commit()
         return {'message': 'Athlete has been deleted'}, 204
 
     @staticmethod
     def update(athlete_id: int, data: dict):
-        athlete = AthleteHandler.fetch_by_id(athlete_id)
+        athlete = AthleteHandler.fetch(id=athlete_id)
         athlete.__dict__.update(data)
         session.commit()
         return athlete.json()
+
+    @staticmethod
+    def json_full(athlete: AthleteModel):
+        athlete_json = athlete.json()
+        # roles = AthleteModel.roles
+        # roles = AthleteModel.query.filter(AthleteRoleModel.roles_assigned.any()).all()
+        roles = AthleteRoleModel.query.filter(AthleteRoleModel.roles_assigned.any(id=athlete.id)).all()
+        athlete_json['roles'] = []
+        for role in roles:
+            athlete_json['roles'].append(role.id)
+
+        return athlete_json

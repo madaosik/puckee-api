@@ -1,4 +1,4 @@
-from app.core.model.models import EventModel, AthleteModel, DATETIME_FORMAT, DURATION_FORMAT, DATESPAN_FORMAT
+from app.core.model.models import GameModel, AthleteModel, DATETIME_FORMAT, DURATION_FORMAT, DATESPAN_FORMAT
 # from app.core.model import AthleteHandler
 from app.core.db_base import session
 from sqlalchemy import exc as e
@@ -30,7 +30,7 @@ class Attendee:
         return attendees
 
     def add(self, event_id: int, athlete_id: int):
-        event = EventHandler.fetch_by_id(event_id)
+        event = GameHandler.fetch_by_id(event_id)
         athlete = AthleteModel.query.filter_by(id=athlete_id) \
             .first_or_404(description='Athlete with id={} is not available'.format(athlete_id))
         if self.role == AttendeeRole.PLAYER:
@@ -45,7 +45,7 @@ class Attendee:
         return 'SUCCESS', 204
 
     def delete(self, event_id: int, athlete_id: int):
-        event = EventHandler.fetch_by_id(event_id)
+        event = GameHandler.fetch_by_id(event_id)
         if self.role == AttendeeRole.PLAYER:
             athlete = AthleteModel.query \
                 .filter(AthleteModel.events_played.any(id=event_id)).filter_by(id=athlete_id) \
@@ -71,7 +71,7 @@ class Attendee:
         return {'message': 'Resource successfully deleted'}, 204
 
 
-class EventHandler:
+class GameHandler:
     players = Attendee(AttendeeRole.PLAYER)
     organizers = Attendee(AttendeeRole.ORGANIZER)
     goalies = Attendee(AttendeeRole.GOALIE)
@@ -79,11 +79,11 @@ class EventHandler:
 
     @staticmethod
     def fetch_all():
-        return EventModel.query.all()
+        return GameModel.query.order_by(asc(GameModel.start)).all()
 
     @staticmethod
     def fetch_by_id(event_id: int):
-        return EventModel.query.filter_by(id=event_id)\
+        return GameModel.query.filter_by(id=event_id)\
             .first_or_404(description='Event with id {} is not available'.format(event_id))
 
     @staticmethod
@@ -93,18 +93,25 @@ class EventHandler:
         @param data: A dictionary containing keys 'start_date' and 'end_date'
         @return: List(EventModel)
         """
-        start_timestamp = datetime.strptime(data['start_date'], DATESPAN_FORMAT)
-        end_timestamp = datetime.strptime(data['end_date'], DATESPAN_FORMAT).replace(hour=23, minute=59)
-        return EventModel.query.filter(EventModel.start <= end_timestamp)\
-            .filter(EventModel.start >= start_timestamp)\
-            .order_by(asc(EventModel.start))
+        try:
+            start_timestamp = datetime.strptime(data['start_date'], DATESPAN_FORMAT)
+        except ValueError:
+            raise ValueError('Unexpected date format for \'start_date\', expected \'YYYY-MM-DD\'')
+        try:
+            end_timestamp = datetime.strptime(data['end_date'], DATESPAN_FORMAT).replace(hour=23, minute=59)
+        except ValueError:
+            raise ValueError('Unexpected date format for \'end_date\', expected \'YYYY-MM-DD\'')
+
+        return GameModel.query.filter(GameModel.start <= end_timestamp)\
+            .filter(GameModel.start >= start_timestamp)\
+            .order_by(asc(GameModel.start))
 
     @staticmethod
     def add(organizer: AthleteModel, data: dict):
-        event = EventModel(name=data['name'], organizer_id=data['organizer_id'],
-                           total_places=data['total_places'],
-                           start=datetime.strptime(data['start'], DATETIME_FORMAT),
-                           duration=datetime.strptime(data['duration'], DURATION_FORMAT))
+        event = GameModel(name=data['name'], organizer_id=data['organizer_id'],
+                          total_places=data['total_places'],
+                          start=datetime.strptime(data['start'], DATETIME_FORMAT),
+                          duration=datetime.strptime(data['duration'], DURATION_FORMAT))
 
         event.organizers.append(organizer)
         try:
@@ -112,34 +119,34 @@ class EventHandler:
             session.commit()
         except e.SQLAlchemyError:
             return {"message": "An error occurred creating the event."}, 500
-        return EventHandler.json_full(event, att_details=True), 201
+        return GameHandler.json_full(event, att_details=True), 201
 
     @staticmethod
     def delete(event_id: int):
-        event = EventHandler.fetch_by_id(event_id)
+        event = GameHandler.fetch_by_id(event_id)
         session.delete(event)
         session.commit()
         return {'message': 'Event has been deleted'}, 204
 
     @staticmethod
     def update(event_id: int, data: dict):
-        event = EventHandler.fetch_by_id(event_id)
+        event = GameHandler.fetch_by_id(event_id)
         event.name = data['name']
         event.total_places = data['total_places']
         event.start = datetime.strptime(data['start'], DATETIME_FORMAT)
         event.duration = datetime.strptime(data['duration'], DURATION_FORMAT)
         session.commit()
-        return EventHandler.json_full(event)
+        return GameHandler.json_full(event)
 
     @staticmethod
-    def json_full(event: EventModel, att_details=False):
+    def json_full(event: GameModel, att_details=False):
         event_json = event.json()
         organizers = AthleteModel.query\
             .filter(AthleteModel.events_organized.any(id=event.id))\
             .all()
-        players = EventHandler.players.fetch_all(event.id)
-        goalies = EventHandler.goalies.fetch_all(event.id)
-        referees = EventHandler.referees.fetch_all(event.id)
+        players = GameHandler.players.fetch_all(event.id)
+        goalies = GameHandler.goalies.fetch_all(event.id)
+        referees = GameHandler.referees.fetch_all(event.id)
 
         if att_details:
             event_json['organizers'] = [o.json() for o in organizers]
@@ -157,25 +164,25 @@ class EventHandler:
     @staticmethod
     def add_participant(event_id: int, data: dict):
         if data['athlete_role'] == 'player':
-            return EventHandler.players.add(event_id, data['athlete_id'])
+            return GameHandler.players.add(event_id, data['athlete_id'])
         elif data['athlete_role'] == 'organizer':
-            return EventHandler.organizers.add(event_id, data['athlete_id'])
+            return GameHandler.organizers.add(event_id, data['athlete_id'])
         elif data['athlete_role'] == 'goalie':
-            return EventHandler.goalies.add(event_id, data['athlete_id'])
+            return GameHandler.goalies.add(event_id, data['athlete_id'])
         elif data['athlete_role'] == 'referee':
-            return EventHandler.referees.add(event_id, data['athlete_id'])
+            return GameHandler.referees.add(event_id, data['athlete_id'])
         else:
             return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404
 
     @staticmethod
     def delete_participant(event_id: int, data: dict):
         if data['athlete_role'] == 'player':
-            return EventHandler.players.delete(event_id, data['athlete_id'])
+            return GameHandler.players.delete(event_id, data['athlete_id'])
         elif data['athlete_role'] == 'organizer':
-            return EventHandler.organizers.delete(event_id, data['athlete_id'])
+            return GameHandler.organizers.delete(event_id, data['athlete_id'])
         elif data['athlete_role'] == 'goalie':
-            return EventHandler.goalies.delete(event_id, data['athlete_id'])
+            return GameHandler.goalies.delete(event_id, data['athlete_id'])
         elif data['athlete_role'] == 'referee':
-            return EventHandler.referees.delete(event_id, data['athlete_id'])
+            return GameHandler.referees.delete(event_id, data['athlete_id'])
         else:
             return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404

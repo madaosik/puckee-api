@@ -4,6 +4,7 @@ from sqlalchemy.types import DateTime, Time
 from flask import jsonify
 
 from werkzeug.security import generate_password_hash
+# import uuid
 import json
 from datetime import datetime, time
 
@@ -35,7 +36,7 @@ event_referees = sqlDb.Table('event_referees',
                             )
 
 
-class EventModel(sqlDb.Model):
+class GameModel(sqlDb.Model):
     __tablename__ = 'event'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -84,21 +85,20 @@ class AthleteModel(sqlDb.Model):
     __tablename__ = 'athlete'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    login = Column(String(30), nullable=False)
     password_hash = Column(String(128), nullable=False)
     name = Column(String(50), nullable=False)
     email = Column(String(50), nullable=False)
-    role = sqlDb.relationship('AthleteRoleModel', secondary=athlete_roles, lazy='subquery',
-                              backref=sqlDb.backref('athlete', lazy=True))
-    #perf_level = Column(Integer)
+    roles = sqlDb.relationship('AthleteRoleModel', secondary=athlete_roles, lazy='subquery',
+                               backref=sqlDb.backref('roles_assigned', lazy=True))
+    perf_level = Column(Integer)
     last_login = Column(TIMESTAMP)
     last_modified = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
 
-    def __init__(self, login, password, name, email):
-        self.login = login
-        self.password_hash = generate_password_hash(password)
+    def __init__(self, email, password, name, perf_level):
+        self.password_hash = generate_password_hash(password, method='sha256')
         self.name = name
         self.email = email
+        self.perf_level = perf_level
 
     def json(self):
         try:
@@ -107,9 +107,9 @@ class AthleteModel(sqlDb.Model):
             formatted_last_login = 'null'
         formatted_last_update = self.last_modified.isoformat().strip('"')
         return {"id": self.id,
-                "login": self.login,
-                "name": self.name,
                 "email": self.email,
+                "name": self.name,
+                "perf_level": self.perf_level,
                 "last_login": formatted_last_login,
                 "last_update": formatted_last_update
                 }
@@ -120,4 +120,3 @@ class AthleteRoleModel(sqlDb.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     role = Column(String(10), nullable=False)
-    # athlete_id = Column(Integer, ForeignKey('athlete.id', nullable=False))

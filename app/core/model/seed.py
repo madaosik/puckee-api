@@ -5,7 +5,7 @@ import random
 from datetime import datetime, timedelta
 
 from app.core.model.models import DATETIME_FORMAT, DURATION_FORMAT, EVENT_NAME_LEN_LIMIT, \
-    AthleteModel, AthleteRoleModel, athlete_roles, EventModel, \
+    AthleteModel, AthleteRoleModel, athlete_roles, GameModel, \
     event_players, event_organizers, event_goalies, event_referees
 
 ATHLETES_CNT = 100
@@ -13,7 +13,7 @@ EVENTS_CNT = 100
 PLAYERS_CNT = 50
 # Every fifth athlete is a goalie
 GOALIE_FREQ = 5
-GOALIE_MAX_CNT = 3
+GOALIE_MAX_CNT = 2
 # Every 13th athlete is a referee
 REF_FREQ = 13
 REF_MAX_CNT = 3
@@ -29,12 +29,18 @@ def seed_data():
     athletes = []
 
     # Seeding all the athletes
-    for i in range(1, ATHLETES_CNT + 1):
+    passwd = 'passwd'
+    athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
+                    'name': 'Adam Tester',
+                    'email': 'a@a.com',
+                    'perf_level': '4'}
+    athletes.append(athlete_dict)
+    for i in range(2, ATHLETES_CNT + 1):
         passwd = 'pass' + str(i)
-        athlete_dict = {'login': fake.first_name_male(),
-                        'password_hash': generate_password_hash(passwd),
+        athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
                         'name': fake.name(),
-                        'email': fake.ascii_email()}
+                        'email': fake.ascii_email(),
+                        'perf_level': random.randint(1, 6)}
         athletes.append(athlete_dict)
     op.bulk_insert(athlete_table, athletes)
     print('Athletes successfully seeded!')
@@ -89,7 +95,7 @@ def seed_data():
                  }
         events.append(event)
 
-    events_table = EventModel.__table__
+    events_table = GameModel.__table__
     op.bulk_insert(events_table, events)
     print('Events successfully seeded!')
 
