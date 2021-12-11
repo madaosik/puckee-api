@@ -28,19 +28,23 @@ class AthleteSignUp(Resource):
 class AthleteLogin(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('email', type=str, required=True,
-                        help='Provide athlete\'s login')
+                        help='Provide athlete\'s email')
     parser.add_argument('password', type=str, required=True,
                         help='Athlete password provided in string')
 
     @staticmethod
     def post():
-        # app.logger.info(f'parsed args: {AthleteLogin.parser.parse_args()}')
         data = AthleteLogin.parser.parse_args()
-        if not AthleteHandler.is_verified(data):
+        app.logger.info(f'parsed args: {data}')
+        verified_athlete = AthleteHandler.fetch_verified(data)
+        if not verified_athlete:
             return {"message": "Bad username or password"}, 401
 
-        access_token = create_access_token(identity=data['email'])
-        return jsonify(access_token=access_token)
+        AthleteHandler.log_login(verified_athlete)
+        return {
+            'access_token': create_access_token(identity=data['email']),
+            'athlete': AthleteHandler.json_full(verified_athlete)
+        }
 
 
 def configure(api):

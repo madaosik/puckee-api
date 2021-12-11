@@ -2,7 +2,7 @@ from app.core.model.models import AthleteModel, AthleteRoleModel
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from werkzeug.security import check_password_hash
-
+from datetime import datetime
 
 class AthleteHandler:
     @staticmethod
@@ -19,12 +19,17 @@ class AthleteHandler:
             raise ValueError("Unexpected argument has been provided to the fetch function - expected 'id' or 'login'")
 
     @staticmethod
-    def is_verified(data: dict):
+    def fetch_verified(data: dict):
         athlete = AthleteHandler.fetch(email=data['email'])
         if athlete is None:
-            return False
+            return None
 
-        return True if check_password_hash(athlete.password_hash, data['password']) else False
+        valid_password = check_password_hash(athlete.password_hash, data['password'])
+        return athlete if valid_password else None
+
+    @staticmethod
+    def fetch_roles(athlete_id: int):
+        return AthleteRoleModel.query.filter(AthleteRoleModel.roles_assigned.any(id=athlete_id)).all()
 
     @staticmethod
     def add(data: dict):
@@ -65,11 +70,11 @@ class AthleteHandler:
     @staticmethod
     def json_full(athlete: AthleteModel):
         athlete_json = athlete.json()
-        # roles = AthleteModel.roles
-        # roles = AthleteModel.query.filter(AthleteRoleModel.roles_assigned.any()).all()
-        roles = AthleteRoleModel.query.filter(AthleteRoleModel.roles_assigned.any(id=athlete.id)).all()
+        roles = AthleteHandler.fetch_roles(athlete.id)
         athlete_json['roles'] = []
-        for role in roles:
-            athlete_json['roles'].append(role.id)
-
+        [athlete_json['roles'].append(role.id) for role in roles]
         return athlete_json
+
+    @staticmethod
+    def log_login(athlete: AthleteModel):
+        athlete.last_login = datetime.now().replace(microsecond=0)

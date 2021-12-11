@@ -48,16 +48,16 @@ def seed_data():
     # Seeding the user, player, goalie and referee roles
     roles_rel = []
     for i in range(1, ATHLETES_CNT + 1):
-        role_user = {'role_id': 1, 'athlete_id': i}
+        role_user = {'role_id': 0, 'athlete_id': i}
         roles_rel.append(role_user)
         if (i < 51) or (i % 2 == 0):
-            role_player = {'role_id': 2, 'athlete_id': i}
+            role_player = {'role_id': 1, 'athlete_id': i}
             roles_rel.append(role_player)
         if i % GOALIE_FREQ == 0:
-            role_goalie = {'role_id': 3, 'athlete_id': i}
+            role_goalie = {'role_id': 2, 'athlete_id': i}
             roles_rel.append(role_goalie)
         if i % REF_FREQ == 0:
-            role_referee = {'role_id': 4, 'athlete_id': i}
+            role_referee = {'role_id': 3, 'athlete_id': i}
             roles_rel.append(role_referee)
     op.bulk_insert(athlete_roles, roles_rel)
     print('Athlete roles successfully seeded!')
