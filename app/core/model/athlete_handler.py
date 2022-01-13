@@ -3,6 +3,8 @@ from app.core.db_base import session
 from sqlalchemy import exc as e
 from werkzeug.security import check_password_hash
 from datetime import datetime
+from flask import current_app as app
+
 
 class AthleteHandler:
     @staticmethod
@@ -34,7 +36,9 @@ class AthleteHandler:
     @staticmethod
     def add(data: dict):
         if AthleteHandler.fetch(email=data['email']):
-            return {"message": 'Athlete with registration email \'{}\' already exists!'.format(data['email'])}, 400
+            error_text = 'Athlete with registration email \'{}\' already exists!'.format(data['email'])
+            app.logger.error(error_text + ' Returning 400.')
+            return {"message": error_text}, 400
 
         athlete = AthleteModel(data['email'], data['password'], data['name'], data['perf_level'])
 

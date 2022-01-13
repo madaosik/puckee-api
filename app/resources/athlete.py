@@ -23,7 +23,7 @@ class Athlete(Resource):
         return [AthleteHandler.json_full(athlete) for athlete in AthleteHandler.fetch_all()]
 
     @staticmethod
-    @jwt_required()
+    # @jwt_required()
     def post():
         app.logger.info(f'parsed args: {Athlete.parser.parse_args()}')
         data = Athlete.parser.parse_args()

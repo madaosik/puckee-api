@@ -118,5 +118,5 @@ class AthleteModel(sqlDb.Model):
 class AthleteRoleModel(sqlDb.Model):
     __tablename__ = 'athlete_role'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     role = Column(String(10), nullable=False)

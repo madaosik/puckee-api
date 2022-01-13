@@ -21,7 +21,10 @@ REF_MAX_CNT = 3
 
 def seed_data():
     athlete_role_table = AthleteRoleModel.__table__
-    op.bulk_insert(athlete_role_table, [{'role': 'user'}, {'role': 'player'}, {'role': 'goalie'}, {'role': 'referee'}])
+    op.bulk_insert(athlete_role_table, [{'role': 'user'},
+                                        {'role': 'player'},
+                                        {'role': 'goalie'},
+                                        {'role': 'referee'}])
 
     athlete_table = AthleteModel.__table__
     Faker.seed(0)
@@ -48,16 +51,16 @@ def seed_data():
     # Seeding the user, player, goalie and referee roles
     roles_rel = []
     for i in range(1, ATHLETES_CNT + 1):
-        role_user = {'role_id': 0, 'athlete_id': i}
+        role_user = {'role_id': 1, 'athlete_id': i}
         roles_rel.append(role_user)
         if (i < 51) or (i % 2 == 0):
-            role_player = {'role_id': 1, 'athlete_id': i}
+            role_player = {'role_id': 2, 'athlete_id': i}
             roles_rel.append(role_player)
         if i % GOALIE_FREQ == 0:
-            role_goalie = {'role_id': 2, 'athlete_id': i}
+            role_goalie = {'role_id': 3, 'athlete_id': i}
             roles_rel.append(role_goalie)
         if i % REF_FREQ == 0:
-            role_referee = {'role_id': 3, 'athlete_id': i}
+            role_referee = {'role_id': 4, 'athlete_id': i}
             roles_rel.append(role_referee)
     op.bulk_insert(athlete_roles, roles_rel)
     print('Athlete roles successfully seeded!')
@@ -73,8 +76,8 @@ def seed_data():
             duration = "01:15:00"
         exp_level = random.randrange(1, 7)
 
-        start_time = fake.date_time_between(start_date=datetime(2021, 11, 30, 00, 00, 00),
-                                            end_date=datetime(2022, 1, 31, 00, 00, 00))
+        start_time = fake.date_time_between(start_date=datetime(2022, 1, 1, 00, 00, 00),
+                                            end_date=datetime(2022, 1, 22, 00, 00, 00))
         start_time_rounded = start_time + (datetime.min - start_time) % timedelta(minutes=15)
         while True:
             event_name = fake.catch_phrase()

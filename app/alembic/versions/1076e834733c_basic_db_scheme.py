@@ -29,7 +29,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('athlete_role',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('role', sa.String(length=10), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
@@ -46,7 +46,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('athlete_roles',
-    sa.Column('role_id', sa.Integer(), nullable=False),
+    sa.Column('role_id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('athlete_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['athlete_id'], ['athlete.id'], ),
     sa.ForeignKeyConstraint(['role_id'], ['athlete_role.id'], ),

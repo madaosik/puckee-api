@@ -26,7 +26,7 @@ class Game(Resource):
         return [GameHandler.json_full(event, att_details=True) for event in GameHandler.fetch_all()]
 
     @staticmethod
-    @jwt_required()
+    # @jwt_required()
     def post():
         app.logger.info(f'parsed args: {Game.parser.parse_args()}')
         data = Game.parser.parse_args()
@@ -91,18 +91,18 @@ class GameParticipants(Resource):
         }
 
     @staticmethod
-    @jwt_required()
-    def post(event_id: int):
+    # @jwt_required()
+    def post(game_id: int):
         app.logger.info(f'parsed args: {GameParticipants.parser.parse_args()}')
         data = GameParticipants.parser.parse_args()
-        return GameHandler.add_participant(event_id, data)
+        return GameHandler.add_participant(int(game_id), data)
 
     @staticmethod
     @jwt_required()
-    def delete(event_id: int):
+    def delete(game_id: int):
         app.logger.info(f'parsed args: {GameParticipants.parser.parse_args()}')
         data = GameParticipants.parser.parse_args()
-        return GameHandler.delete_participant(event_id, data)
+        return GameHandler.delete_participant(int(game_id), data)
 
 
 def configure(api):

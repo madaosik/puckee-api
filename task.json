@@ -1,0 +1,300 @@
+{
+  "ipcMode": null,
+  "executionRoleArn": "arn:aws:iam::640979940726:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "dnsSearchDomains": [],
+      "environmentFiles": null,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "secretOptions": null,
+        "options": {
+          "awslogs-group": "teamorg-api-config",
+          "awslogs-region": "eu-central-1",
+          "awslogs-stream-prefix": "api"
+        }
+      },
+      "entryPoint": [],
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "protocol": "tcp",
+          "containerPort": 80
+        },
+        {
+          "hostPort": 22,
+          "protocol": "tcp",
+          "containerPort": 22
+        }
+      ],
+      "command": [],
+      "linuxParameters": {
+        "capabilities": {
+          "add": null,
+          "drop": null
+        },
+        "sharedMemorySize": null,
+        "tmpfs": null,
+        "devices": [],
+        "maxSwap": null,
+        "swappiness": null,
+        "initProcessEnabled": true
+      },
+      "cpu": 0,
+      "environment": [
+        {
+          "name": "DB_HOST",
+          "value": "127.0.0.1:3306"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "server_db"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "value": "my_secret_password"
+        },
+        {
+          "name": "DB_USER",
+          "value": "root"
+        },
+        {
+          "name": "DEV_MODE",
+          "value": "1"
+        }
+      ],
+      "resourceRequirements": null,
+      "ulimits": null,
+      "repositoryCredentials": {
+        "credentialsParameter": "arn:aws:secretsmanager:eu-central-1:640979940726:secret:dev/DockerHubSecret-Mg5WKB"
+      },
+      "dnsServers": [],
+      "mountPoints": [],
+      "workingDirectory": null,
+      "secrets": null,
+      "dockerSecurityOptions": [],
+      "memory": null,
+      "memoryReservation": null,
+      "volumesFrom": [],
+      "stopTimeout": null,
+      "image": "madaosik/teamorg-repo",
+      "startTimeout": null,
+      "firelensConfiguration": null,
+      "dependsOn": [
+        {
+          "containerName": "db",
+          "condition": "HEALTHY"
+        }
+      ],
+      "disableNetworking": null,
+      "interactive": null,
+      "healthCheck": null,
+      "essential": true,
+      "links": [],
+      "hostname": null,
+      "extraHosts": [],
+      "pseudoTerminal": false,
+      "user": null,
+      "readonlyRootFilesystem": false,
+      "dockerLabels": null,
+      "systemControls": null,
+      "privileged": false,
+      "name": "api"
+    },
+    {
+      "dnsSearchDomains": [],
+      "environmentFiles": null,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "secretOptions": null,
+        "options": {
+          "awslogs-group": "teamorg-api-config",
+          "awslogs-region": "eu-central-1",
+          "awslogs-stream-prefix": "db"
+        }
+      },
+      "entryPoint": [],
+      "portMappings": [
+        {
+          "hostPort": 3306,
+          "protocol": "tcp",
+          "containerPort": 3306
+        }
+      ],
+      "command": [],
+      "linuxParameters": {
+        "capabilities": {
+          "add": null,
+          "drop": null
+        },
+        "sharedMemorySize": null,
+        "tmpfs": null,
+        "devices": [],
+        "maxSwap": null,
+        "swappiness": null,
+        "initProcessEnabled": null
+      },
+      "cpu": 0,
+      "environment": [
+        {
+          "name": "MYSQL_DATABASE",
+          "value": "server_db"
+        },
+        {
+          "name": "MYSQL_PASSWORD",
+          "value": "password"
+        },
+        {
+          "name": "MYSQL_ROOT_PASSWORD",
+          "value": "my_secret_password"
+        },
+        {
+          "name": "MYSQL_USER",
+          "value": "user"
+        }
+      ],
+      "resourceRequirements": null,
+      "ulimits": null,
+      "dnsServers": [],
+      "mountPoints": [
+        {
+          "readOnly": false,
+          "containerPath": "/var/lib/mysql",
+          "sourceVolume": "volume-0"
+        }
+      ],
+      "workingDirectory": null,
+      "secrets": null,
+      "dockerSecurityOptions": [],
+      "memory": null,
+      "memoryReservation": null,
+      "volumesFrom": [],
+      "stopTimeout": null,
+      "image": "mysql:5.7",
+      "startTimeout": null,
+      "firelensConfiguration": null,
+      "dependsOn": null,
+      "disableNetworking": null,
+      "interactive": null,
+      "healthCheck": {
+        "retries": 2,
+        "command": [
+          "CMD-SHELL",
+          "echo success"
+        ],
+        "timeout": 10,
+        "interval": 5,
+        "startPeriod": 30
+      },
+      "essential": true,
+      "links": [],
+      "hostname": null,
+      "extraHosts": [],
+      "pseudoTerminal": false,
+      "user": null,
+      "readonlyRootFilesystem": false,
+      "dockerLabels": null,
+      "systemControls": null,
+      "privileged": false,
+      "name": "db"
+    }
+  ],
+  "placementConstraints": [],
+  "memory": "512",
+  "taskRoleArn": null,
+  "compatibilities": [
+    "EC2",
+    "FARGATE"
+  ],
+  "taskDefinitionArn": "arn:aws:ecs:eu-central-1:640979940726:task-definition/teamorg-server:7",
+  "family": "teamorg-server",
+  "requiresAttributes": [
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "ecs.capability.execution-role-awslogs"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "ecs.capability.private-registry-authentication.secretsmanager"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.25"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "ecs.capability.container-ordering"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "ecs.capability.container-health-check"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "ecs.capability.task-eni"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+    }
+  ],
+  "pidMode": null,
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "networkMode": "awsvpc",
+  "cpu": "256",
+  "revision": 7,
+  "status": "ACTIVE",
+  "inferenceAccelerators": null,
+  "proxyConfiguration": null,
+  "volumes": [
+    {
+      "fsxWindowsFileServerVolumeConfiguration": null,
+      "efsVolumeConfiguration": null,
+      "name": "volume-0",
+      "host": {
+        "sourcePath": null
+      },
+      "dockerVolumeConfiguration": null
+    }
+  ]
+}

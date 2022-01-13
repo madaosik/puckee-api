@@ -17,6 +17,7 @@ class AthleteSignUp(Resource):
                         help='Please provide athlete name')
     parser.add_argument('email', type=str, required=True,
                         help='Please provide athlete email')
+    parser.add_argument('roles')
 
     @staticmethod
     def post():

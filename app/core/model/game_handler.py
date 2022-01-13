@@ -163,26 +163,28 @@ class GameHandler:
 
     @staticmethod
     def add_participant(event_id: int, data: dict):
-        if data['athlete_role'] == 'player':
+        role_ind = int(data['athlete_role'])
+        if role_ind == 1:
             return GameHandler.players.add(event_id, data['athlete_id'])
-        elif data['athlete_role'] == 'organizer':
-            return GameHandler.organizers.add(event_id, data['athlete_id'])
-        elif data['athlete_role'] == 'goalie':
+        elif role_ind == 2:
             return GameHandler.goalies.add(event_id, data['athlete_id'])
-        elif data['athlete_role'] == 'referee':
+        elif role_ind == 3:
             return GameHandler.referees.add(event_id, data['athlete_id'])
+        elif role_ind == 4:
+            return GameHandler.organizers.add(event_id, data['athlete_id'])
         else:
             return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404
 
     @staticmethod
     def delete_participant(event_id: int, data: dict):
-        if data['athlete_role'] == 'player':
+        role_ind = int(data['athlete_role'])
+        if role_ind == 1:
             return GameHandler.players.delete(event_id, data['athlete_id'])
-        elif data['athlete_role'] == 'organizer':
-            return GameHandler.organizers.delete(event_id, data['athlete_id'])
-        elif data['athlete_role'] == 'goalie':
+        elif role_ind == 2:
             return GameHandler.goalies.delete(event_id, data['athlete_id'])
-        elif data['athlete_role'] == 'referee':
+        elif role_ind == 3:
             return GameHandler.referees.delete(event_id, data['athlete_id'])
+        elif role_ind == 4:
+            return GameHandler.organizers.delete(event_id, data['athlete_id'])
         else:
             return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404
