@@ -5,7 +5,7 @@ import random
 from datetime import datetime, timedelta
 
 from app.core.model.models import DATETIME_FORMAT, DURATION_FORMAT, EVENT_NAME_LEN_LIMIT, \
-    AthleteModel, AthleteRoleModel, athlete_roles, GameModel, \
+    AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, \
     event_players, event_organizers, event_goalies, event_referees
 
 ATHLETES_CNT = 100
@@ -36,14 +36,16 @@ def seed_data():
     athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
                     'name': 'Adam Tester',
                     'email': 'a@a.com',
-                    'perf_level': '4'}
+                    # 'perf_level': '4'}
+                    }
     athletes.append(athlete_dict)
     for i in range(2, ATHLETES_CNT + 1):
         passwd = 'pass' + str(i)
         athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
                         'name': fake.name(),
                         'email': fake.ascii_email(),
-                        'perf_level': random.randint(1, 6)}
+                        # 'perf_level': random.randint(1, 6)}
+                        }
         athletes.append(athlete_dict)
     op.bulk_insert(athlete_table, athletes)
     print('Athletes successfully seeded!')
@@ -51,17 +53,18 @@ def seed_data():
     # Seeding the user, player, goalie and referee roles
     roles_rel = []
     for i in range(1, ATHLETES_CNT + 1):
-        role_user = {'role_id': 1, 'athlete_id': i}
+        role_user = {'role_id': 1, 'athlete_id': i, 'skill_level': 0.0}
         roles_rel.append(role_user)
         if (i < 51) or (i % 2 == 0):
-            role_player = {'role_id': 2, 'athlete_id': i}
+            role_player = {'role_id': 2, 'athlete_id': i, 'skill_level': 1.5}
             roles_rel.append(role_player)
         if i % GOALIE_FREQ == 0:
-            role_goalie = {'role_id': 3, 'athlete_id': i}
+            role_goalie = {'role_id': 3, 'athlete_id': i, 'skill_level': 3.7}
             roles_rel.append(role_goalie)
         if i % REF_FREQ == 0:
-            role_referee = {'role_id': 4, 'athlete_id': i}
+            role_referee = {'role_id': 4, 'athlete_id': i, 'skill_level': 0.0}
             roles_rel.append(role_referee)
+    athlete_roles = AthleteRoleAssociationModel.__table__
     op.bulk_insert(athlete_roles, roles_rel)
     print('Athlete roles successfully seeded!')
 

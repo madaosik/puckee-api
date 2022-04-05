@@ -1,4 +1,6 @@
-from app.core.model.models import AthleteModel, AthleteRoleModel
+from flask_jwt_extended import create_access_token
+
+from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from werkzeug.security import check_password_hash
@@ -31,7 +33,7 @@ class AthleteHandler:
 
     @staticmethod
     def fetch_roles(athlete_id: int):
-        return AthleteRoleModel.query.filter(AthleteRoleModel.roles_assigned.any(id=athlete_id)).all()
+        return AthleteRoleAssociationModel.query.filter(AthleteRoleAssociationModel.roles_assigned.has(id=athlete_id)).all()
 
     @staticmethod
     def add(data: dict):
@@ -40,22 +42,27 @@ class AthleteHandler:
             app.logger.error(error_text + ' Returning 400.')
             return {"message": error_text}, 400
 
-        athlete = AthleteModel(data['email'], data['password'], data['name'], data['perf_level'])
+        athlete = AthleteModel(data['email'], data['password'])
 
         # Every registered athlete is a user
-        user_role = AthleteRoleModel.query.filter_by(id=1).first()
-        athlete.roles.append(user_role)
-        for role_id in data['roles']:
-            role = AthleteRoleModel.query.filter_by(id=role_id) \
-                .first_or_404(description='Role with id={} is not available'.format(role_id))
-            athlete.roles.append(role)
+        # user_role = AthleteRoleModel.query.filter_by(id=1).first()
+        # athlete.roles.append(user_role)
+        # for role_id in data['roles']:
+        #     role = AthleteRoleModel.query.filter_by(id=role_id) \
+        #         .first_or_404(description='Role with id={} is not available'.format(role_id))
+            # athlete.roles.append(role)
 
         try:
             session.add(athlete)
             session.commit()
         except e.SQLAlchemyError:
             return {"message": "An internal error occurred during registration, please try again!"}, 500
-        return AthleteHandler.json_full(athlete), 201
+
+        return {
+            'access_token': create_access_token(identity=data['email']),
+            'athlete': AthleteHandler.json_full(athlete)
+        }
+        # return AthleteHandler.json_full(athlete), 201
 
     @staticmethod
     def delete(athlete_id: int):
@@ -74,9 +81,11 @@ class AthleteHandler:
     @staticmethod
     def json_full(athlete: AthleteModel):
         athlete_json = athlete.json()
-        roles = AthleteHandler.fetch_roles(athlete.id)
+        athlete_roles = AthleteHandler.fetch_roles(athlete.id)
         athlete_json['roles'] = []
-        [athlete_json['roles'].append(role.id) for role in roles]
+        for athlete_role in athlete_roles:
+            role = {'id': athlete_role.role_id, 'skill_level': athlete_role.skill_level}
+            athlete_json['roles'].append(role)
         return athlete_json
 
     @staticmethod

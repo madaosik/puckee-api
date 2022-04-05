@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, TIMESTAMP, func, ForeignKey
+from sqlalchemy import Column, Integer, String, TIMESTAMP, func, ForeignKey, Float
 from sqlalchemy.types import DateTime, Time
 from flask import jsonify
 
@@ -75,30 +75,31 @@ class GameModel(sqlDb.Model):
                 }
 
 
-athlete_roles = sqlDb.Table('athlete_roles',
-                            Column('role_id', Integer, ForeignKey('athlete_role.id'), primary_key=True),
-                            Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
-                            )
-
+# athlete_roles = sqlDb.Table('athlete_roles',
+#                             Column('role_id', Integer, ForeignKey('athlete_role.id'), primary_key=True),
+#                             Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
+#                             Column('skill_level', Float),
+#                             )
 
 class AthleteModel(sqlDb.Model):
     __tablename__ = 'athlete'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     password_hash = Column(String(128), nullable=False)
-    name = Column(String(50), nullable=False)
+    name = Column(String(50))
     email = Column(String(50), nullable=False)
-    roles = sqlDb.relationship('AthleteRoleModel', secondary=athlete_roles, lazy='subquery',
-                               backref=sqlDb.backref('roles_assigned', lazy=True))
-    perf_level = Column(Integer)
+    # roles = sqlDb.relationship('AthleteRoleModel', secondary=athlete_roles, lazy='subquery',
+    #                            backref=sqlDb.backref('roles_assigned', lazy=True))
+    roles = sqlDb.relationship("AthleteRoleAssociationModel", backref=sqlDb.backref('roles_assigned', lazy=True))
+    # perf_level = Column(Integer)
     last_login = Column(TIMESTAMP)
     last_modified = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
 
-    def __init__(self, email, password, name, perf_level):
+    def __init__(self, email, password):
         self.password_hash = generate_password_hash(password, method='sha256')
-        self.name = name
+        # self.name = ""
         self.email = email
-        self.perf_level = perf_level
+        # self.perf_level = perf_level
 
     def json(self):
         try:
@@ -109,7 +110,7 @@ class AthleteModel(sqlDb.Model):
         return {"id": self.id,
                 "email": self.email,
                 "name": self.name,
-                "perf_level": self.perf_level,
+                # "perf_level": self.perf_level,
                 "last_login": formatted_last_login,
                 "last_update": formatted_last_update
                 }
@@ -120,3 +121,11 @@ class AthleteRoleModel(sqlDb.Model):
 
     id = Column(Integer, primary_key=True)
     role = Column(String(10), nullable=False)
+    # players = sqlDb.relationship("AthleteRoleAssociationModel", backref=sqlDb.backref('athletes_in_role', lazy=True))
+
+
+class AthleteRoleAssociationModel(sqlDb.Model):
+    __tablename__ = 'athlete_roles_assoc'
+    athlete_id = Column(ForeignKey('athlete.id'), primary_key=True)
+    role_id = Column(ForeignKey('athlete_role.id'), primary_key=True)
+    skill_level = Column(Float)

@@ -13,17 +13,17 @@ class AthleteSignUp(Resource):
     #                     help='Athlete login')
     parser.add_argument('password', type=str, required=True,
                         help='Athlete password provided in string')
-    parser.add_argument('name', type=str, required=True,
-                        help='Please provide athlete name')
+    # parser.add_argument('name', type=str, required=True,
+    #                     help='Please provide athlete name')
     parser.add_argument('email', type=str, required=True,
                         help='Please provide athlete email')
-    parser.add_argument('roles')
+    # parser.add_argument('roles')
 
     @staticmethod
     def post():
         app.logger.info(f'parsed args: {AthleteSignUp.parser.parse_args()}')
         data = AthleteSignUp.parser.parse_args()
-        return AthleteHandler.create(data)
+        return AthleteHandler.add(data)
 
 
 class AthleteLogin(Resource):
