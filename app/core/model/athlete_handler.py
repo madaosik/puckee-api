@@ -7,6 +7,13 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 from flask import current_app as app
 
+import re
+
+
+def validate_email(email: str):
+    email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    return True if re.fullmatch(email_regex, email) else False
+
 
 class AthleteHandler:
     @staticmethod
@@ -37,12 +44,17 @@ class AthleteHandler:
 
     @staticmethod
     def add(data: dict):
+        if validate_email(data['email']):
+            athlete = AthleteModel(data['email'], data['password'])
+        else:
+            error_text = 'Provided e-mail \'{}\' is not an email!'.format(data['email'])
+            app.logger.error(error_text + ' Returning 400.')
+            return {"message": error_text}, 400
+
         if AthleteHandler.fetch(email=data['email']):
             error_text = 'Athlete with registration email \'{}\' already exists!'.format(data['email'])
             app.logger.error(error_text + ' Returning 400.')
             return {"message": error_text}, 400
-
-        athlete = AthleteModel(data['email'], data['password'])
 
         # Every registered athlete is a user
         # user_role = AthleteRoleModel.query.filter_by(id=1).first()
