@@ -4,9 +4,9 @@ from werkzeug.security import generate_password_hash
 import random
 from datetime import datetime, timedelta
 
-from app.core.model.models import DATETIME_FORMAT, DURATION_FORMAT, EVENT_NAME_LEN_LIMIT, \
-    AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, \
-    event_players, event_organizers, event_goalies, event_referees
+from app.core.model.models import GAME_NAME_LEN_LIMIT, \
+    AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, IceRinkModel, \
+    game_players, game_organizers, game_goalies, game_referees
 
 ATHLETES_CNT = 100
 EVENTS_CNT = 100
@@ -24,7 +24,21 @@ def seed_data():
     op.bulk_insert(athlete_role_table, [{'role': 'user'},
                                         {'role': 'player'},
                                         {'role': 'goalie'},
-                                        {'role': 'referee'}])
+                                        {'role': 'referee'}
+                                        ])
+
+    ice_rink_table = IceRinkModel.__table__
+    ice_rink_array = [{'name': 'Sportcentrum Lužánky - NHL', 'address': '', 'price_per_hour': 3960},
+                {'name': 'Sportcentrum Lužánky - Evropská', 'address': '', 'price_per_hour': 3960},
+                {'name': 'Hokejová hala ZŠ Úvoz', 'address': '', 'price_per_hour': 3450},
+                {'name': 'Winning Group Arena', 'address': '', 'price_per_hour': 4250},
+                {'name': 'Zimní stadion Kuřim', 'address': '', 'price_per_hour': 3850},
+                {'name': 'Zimní stadion Rosice', 'address': '', 'price_per_hour': 3400},
+                {'name': 'Zimní stadion Velká Bíteš', 'address': '', 'price_per_hour': 3350},
+                {'name': 'Zimní stadion Blansko', 'address': '', 'price_per_hour': 3550},
+                {'name': 'Zimní stadion Vyškov', 'address': '', 'price_per_hour': 3750},
+                ]
+    op.bulk_insert(ice_rink_table, ice_rink_array)
 
     athlete_table = AthleteModel.__table__
     Faker.seed(0)
@@ -71,33 +85,44 @@ def seed_data():
     # Seeding the events
     events = []
     for i in range(1, EVENTS_CNT + 1):
-        if i % 2 == 0:
-            duration = "01:00:00"
-        elif i % 9 == 0:
-            duration = "01:30:00"
-        else:
-            duration = "01:15:00"
-        exp_level = random.randrange(1, 7)
+        exp_skill = random.randrange(1, 7)
+        start_datetime = fake.date_time_between(start_date=datetime(2022, 12, 22, 00, 00, 00),
+                                            end_date=datetime(2022, 12, 22, 00, 00, 00))
+        start_datetime_rounded = start_datetime + (datetime.min - start_datetime) % timedelta(minutes=15)
 
-        start_time = fake.date_time_between(start_date=datetime(2022, 1, 1, 00, 00, 00),
-                                            end_date=datetime(2022, 1, 22, 00, 00, 00))
-        start_time_rounded = start_time + (datetime.min - start_time) % timedelta(minutes=15)
+        if i % 2 == 0:
+            duration = timedelta(hours=1)
+        elif i % 9 == 0:
+            duration = timedelta(hours=1, minutes=15)
+        else:
+            duration = timedelta(hours=1, minutes=30)
+
+        end_datetime_rounded = start_datetime_rounded + duration
+        start_time = start_datetime_rounded.time()
+        end_time = end_datetime_rounded.time()
+        game_date = start_datetime_rounded.date()
+
+
         while True:
             event_name = fake.catch_phrase()
-            if len(event_name) < EVENT_NAME_LEN_LIMIT:
+            if len(event_name) < GAME_NAME_LEN_LIMIT:
                 break
             else:
                 event_name = fake.catch_phrase()
 
-        locations = ['Sportcentrum Lužánky', 'winninggroup Arena', 'TJ Stadion Brno', 'Hokejová hala Úvoz']
-        location = random.choice(locations)
-
         event = {'name': event_name,
-                 'total_places': random.randrange(2, 4)*10,
-                 'start': start_time_rounded,
-                 'duration': datetime.strptime(duration, DURATION_FORMAT),
-                 'location': location,
-                 'exp_level': exp_level
+                 'exp_players_cnt': random.randrange(2, 4)*10,
+                 'exp_goalies_cnt': random.randrange(1, 3),
+                 'goalie_renum': random.choice([0, 50, 150, 200]),
+                 'exp_referees_cnt': random.randrange(1, 3),
+                 'referee_renum': random.choice([0, 50, 150, 200]),
+                 'location_id': random.randrange(1, len(ice_rink_array) + 1),
+                 'date': game_date,
+                 'start_time': start_time,
+                 'end_time': end_time,
+                 'exp_skill': exp_skill,
+                 'est_price': random.choice([200, 250, 300]),
+                 'other_costs': random.choice([50, 100, 0, 150, 200]),
                  }
         events.append(event)
 
@@ -132,23 +157,25 @@ def seed_data():
         referee_ind = list(set(referee_ind))
 
         for player_id in players_ind:
-            player_event = {'event_id': int(event_id), 'athlete_id': int(player_id)}
+            player_event = {'game_id': int(event_id), 'athlete_id': int(player_id)}
             player_events_rel.append(player_event)
 
         for goalie_id in goalies_ind:
-            goalie_event = {'athlete_id': goalie_id, 'event_id': event_id}
+            goalie_event = {'athlete_id': goalie_id, 'game_id': event_id}
             goalie_events_rel.append(goalie_event)
 
         for organizer_id in organizers_ind:
-            organizers_event = {'athlete_id': organizer_id, 'event_id': event_id}
+            organizers_event = {'athlete_id': organizer_id, 'game_id': event_id}
             organizer_events_rel.append(organizers_event)
 
         for ref_id in referee_ind:
-            ref_event = {'athlete_id': ref_id, 'event_id': event_id}
+            ref_event = {'athlete_id': ref_id, 'game_id': event_id}
             ref_events_rel.append(ref_event)
 
-    op.bulk_insert(event_players, player_events_rel)
-    op.bulk_insert(event_goalies, goalie_events_rel)
-    op.bulk_insert(event_organizers, organizer_events_rel)
-    op.bulk_insert(event_referees, ref_events_rel)
+    op.bulk_insert(game_players, player_events_rel)
+    op.bulk_insert(game_goalies, goalie_events_rel)
+    op.bulk_insert(game_organizers, organizer_events_rel)
+    op.bulk_insert(game_referees, ref_events_rel)
     print('Event participants successfully seeded!')
+
+

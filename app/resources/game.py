@@ -21,7 +21,7 @@ class Game(Resource):
                         help='Provide expected level of game in \'exp_level\'')
 
     @staticmethod
-    @jwt_required()
+    # @jwt_required()
     def get():
         return [GameHandler.json_full(event, att_details=True) for event in GameHandler.fetch_all()]
 

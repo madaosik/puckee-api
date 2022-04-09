@@ -1,59 +1,70 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, TIMESTAMP, func, ForeignKey, Float
-from sqlalchemy.types import DateTime, Time
+from sqlalchemy.types import DateTime, Time, Date, Boolean
 from flask import jsonify
 
 from werkzeug.security import generate_password_hash
 # import uuid
 import json
-from datetime import datetime, time
+from datetime import datetime, time, date
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
-DURATION_FORMAT = '%H:%M:%S'
-DATESPAN_FORMAT = '%Y-%m-%d'
-EVENT_NAME_LEN_LIMIT = 25
+TIME_FORMAT = '%H:%M:%S'
+DATE_FORMAT = '%Y-%m-%d'
+GAME_NAME_LEN_LIMIT = 25
 
 sqlDb: SQLAlchemy = SQLAlchemy(session_options={"autoflush": True})
 
-event_players = sqlDb.Table('event_players',
+game_players = sqlDb.Table('game_players',
+                           Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
+                           Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
+                           )
+
+game_organizers = sqlDb.Table('game_organizers',
                               Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
-                              Column('event_id', Integer, ForeignKey('event.id'), primary_key=True),
+                              Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
                               )
 
-event_organizers = sqlDb.Table('event_organizers',
-                               Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
-                               Column('event_id', Integer, ForeignKey('event.id'), primary_key=True),
-                               )
+game_goalies = sqlDb.Table('game_goalies',
+                           Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
+                           Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
+                           )
 
-event_goalies = sqlDb.Table('event_goalies',
+game_referees = sqlDb.Table('game_referees',
                             Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
-                            Column('event_id', Integer, ForeignKey('event.id'), primary_key=True),
-                            )
-
-event_referees = sqlDb.Table('event_referees',
-                            Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
-                            Column('event_id', Integer, ForeignKey('event.id'), primary_key=True),
+                            Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
                             )
 
 
 class GameModel(sqlDb.Model):
-    __tablename__ = 'event'
+    __tablename__ = 'game'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(EVENT_NAME_LEN_LIMIT))
-    total_places = Column(Integer)
-    location = Column(String(40))
-    start = Column(DateTime)
-    duration = Column(Time)
-    players = sqlDb.relationship('AthleteModel', secondary=event_players, lazy='subquery',
-                                 backref=sqlDb.backref('events_played', lazy=True))
-    organizers = sqlDb.relationship('AthleteModel', secondary=event_organizers, lazy='subquery',
-                                    backref=sqlDb.backref('events_organized', lazy=True))
-    goalies = sqlDb.relationship('AthleteModel', secondary=event_goalies, lazy='subquery',
-                                 backref=sqlDb.backref('events_goalied', lazy=True))
-    referees = sqlDb.relationship('AthleteModel', secondary=event_referees, lazy='subquery',
-                                  backref=sqlDb.backref('events_refereed', lazy=True))
-    exp_level = Column(Integer)
+    name = Column(String(GAME_NAME_LEN_LIMIT), nullable=False)
+    exp_players_cnt = Column(Integer, nullable=False)
+    exp_goalies_cnt = Column(Integer, nullable=False)
+    exp_referees_cnt = Column(Integer, nullable=False)
+    location_id = Column(Integer, ForeignKey('icerink.id'), nullable=False)
+    # location = sqlDb.relationship("IceRinkModel", back_populates="games")
+    # location = sqlDb.relationship("IceRinkModel", backref=sqlDb.backref('athlete', uselist=False))
+    est_price = Column(Integer, nullable=False)
+    remarks = Column(String(200), nullable=True)
+    date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    other_costs = Column(Integer, nullable=False)
+    is_private = Column(Boolean, default=False, nullable=False)
+    goalie_renum = Column(Integer, nullable=False)
+    referee_renum = Column(Integer, nullable=False)
+    players = sqlDb.relationship('AthleteModel', secondary=game_players, lazy='subquery',
+                                 backref=sqlDb.backref('games_played', lazy=True))
+    organizers = sqlDb.relationship('AthleteModel', secondary=game_organizers, lazy='subquery',
+                                    backref=sqlDb.backref('games_organized', lazy=True))
+    goalies = sqlDb.relationship('AthleteModel', secondary=game_goalies, lazy='subquery',
+                                 backref=sqlDb.backref('games_goalied', lazy=True))
+    referees = sqlDb.relationship('AthleteModel', secondary=game_referees, lazy='subquery',
+                                  backref=sqlDb.backref('games_refereed', lazy=True))
+    exp_skill = Column(Integer, nullable=False)
     time_created = Column(TIMESTAMP, nullable=False, server_default=func.now())
     last_update = Column(TIMESTAMP, nullable=False, server_default=func.now(), server_onupdate=func.now())
 
@@ -65,11 +76,20 @@ class GameModel(sqlDb.Model):
         last_update_formatted = self.last_update.isoformat()
         return {"id": self.id,
                 "name": self.name,
-                "total_places": self.total_places,
-                "location": self.location,
-                "start": datetime.strftime(self.start, DATETIME_FORMAT),
-                "duration": time.strftime(self.duration, DURATION_FORMAT),
-                "exp_level": self.exp_level,
+                "exp_players_cnt": self.exp_players_cnt,
+                "exp_goalies_cnt": self.exp_goalies_cnt,
+                "exp_referees_cnt": self.exp_referees_cnt,
+                "location_id": self.location_id,
+                "est_price": self.est_price,
+                "remarks": self.remarks,
+                "date":  date.strftime(self.date, DATE_FORMAT),
+                "start_time": time.strftime(self.start_time, TIME_FORMAT),
+                "end_time": time.strftime(self.end_time, TIME_FORMAT),
+                "other_costs": self.other_costs,
+                "is_private": self.is_private,
+                "goalie_renum": self.goalie_renum,
+                "referee_renum": self.referee_renum,
+                "exp_skill": self.exp_skill,
                 "creation_time": creation_time_formatted,
                 "last_updated": last_update_formatted
                 }
@@ -114,6 +134,16 @@ class AthleteModel(sqlDb.Model):
                 "last_login": formatted_last_login,
                 "last_update": formatted_last_update
                 }
+
+
+class IceRinkModel(sqlDb.Model):
+    __tablename__ = 'icerink'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)
+    address = Column(String(40))
+    price_per_hour = Column(Integer)
+    games = sqlDb.relationship("GameModel", backref='location', lazy=True)
 
 
 class AthleteRoleModel(sqlDb.Model):

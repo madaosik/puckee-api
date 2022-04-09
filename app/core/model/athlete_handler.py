@@ -52,7 +52,7 @@ class AthleteHandler:
             return {"message": error_text}, 400
 
         if AthleteHandler.fetch(email=data['email']):
-            error_text = 'Athlete with registration email \'{}\' already exists!'.format(data['email'])
+            error_text = 'Uživatel registrovaný pod e-mailem \'{}\' již existuje!'.format(data['email'])
             app.logger.error(error_text + ' Returning 400.')
             return {"message": error_text}, 400
 

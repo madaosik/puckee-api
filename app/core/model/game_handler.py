@@ -1,9 +1,8 @@
-from app.core.model.models import GameModel, AthleteModel, DATETIME_FORMAT, DURATION_FORMAT, DATESPAN_FORMAT
-# from app.core.model import AthleteHandler
+from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from sqlalchemy import asc
-from datetime import datetime
+from datetime import datetime, time, date
 from enum import Enum
 
 
@@ -20,17 +19,17 @@ class Attendee:
 
     def fetch_all(self, event_id: int):
         if self.role == AttendeeRole.PLAYER:
-            attendees = AthleteModel.query.filter(AthleteModel.events_played.any(id=event_id)).all()
+            attendees = AthleteModel.query.filter(AthleteModel.games_played.any(id=event_id)).all()
         elif self.role == AttendeeRole.ORGANIZER:
-            attendees = AthleteModel.query.filter(AthleteModel.events_organized.any(id=event_id)).all()
+            attendees = AthleteModel.query.filter(AthleteModel.games_organized.any(id=event_id)).all()
         elif self.role == AttendeeRole.GOALIE:
-            attendees = AthleteModel.query.filter(AthleteModel.events_goalied.any(id=event_id)).all()
+            attendees = AthleteModel.query.filter(AthleteModel.games_goalied.any(id=event_id)).all()
         elif self.role == AttendeeRole.REFEREE:
-            attendees = AthleteModel.query.filter(AthleteModel.events_refereed.any(id=event_id)).all()
+            attendees = AthleteModel.query.filter(AthleteModel.games_refereed.any(id=event_id)).all()
         return attendees
 
-    def add(self, event_id: int, athlete_id: int):
-        event = GameHandler.fetch_by_id(event_id)
+    def add(self, game_id: int, athlete_id: int):
+        event = GameHandler.fetch_by_id(game_id)
         athlete = AthleteModel.query.filter_by(id=athlete_id) \
             .first_or_404(description='Athlete with id={} is not available'.format(athlete_id))
         if self.role == AttendeeRole.PLAYER:
@@ -44,28 +43,28 @@ class Attendee:
         session.commit()
         return 'SUCCESS', 204
 
-    def delete(self, event_id: int, athlete_id: int):
-        event = GameHandler.fetch_by_id(event_id)
+    def delete(self, game_id: int, athlete_id: int):
+        event = GameHandler.fetch_by_id(game_id)
         if self.role == AttendeeRole.PLAYER:
             athlete = AthleteModel.query \
-                .filter(AthleteModel.events_played.any(id=event_id)).filter_by(id=athlete_id) \
-                .first_or_404(description='Athlete with id {} is not attending the event {}'.format(athlete_id, event_id))
+                .filter(AthleteModel.games_played.any(id=game_id)).filter_by(id=athlete_id) \
+                .first_or_404(description='Athlete with id {} is not attending the event {}'.format(athlete_id, game_id))
             event.players.remove(athlete)
         elif self.role == AttendeeRole.ORGANIZER:
             athlete = AthleteModel.query \
-                .filter(AthleteModel.events_organized.any(id=event_id)) \
+                .filter(AthleteModel.games_organized.any(id=game_id)) \
                 .filter_by(id=athlete_id) \
-                .first_or_404(description='Organizer with id {} is not organizing the event {}'.format(athlete_id, event_id))
+                .first_or_404(description='Organizer with id {} is not organizing the event {}'.format(athlete_id, game_id))
             event.organizers.remove(athlete)
         elif self.role == AttendeeRole.GOALIE:
             athlete = AthleteModel.query \
-                .filter(AthleteModel.events_goalied.any(id=event_id)).filter_by(id=athlete_id) \
-                .first_or_404(description='Goalie with id {} is not attending the event {}'.format(athlete_id, event_id))
+                .filter(AthleteModel.games_goalied.any(id=game_id)).filter_by(id=athlete_id) \
+                .first_or_404(description='Goalie with id {} is not attending the event {}'.format(athlete_id, game_id))
             event.goalies.remove(athlete)
         elif self.role == AttendeeRole.REFEREE:
             athlete = AthleteModel.query \
-                .filter(AthleteModel.events_refereed.any(id=event_id)).filter_by(id=athlete_id) \
-                .first_or_404(description='Referee with id {} is not attending the event {}'.format(athlete_id, event_id))
+                .filter(AthleteModel.games_refereed.any(id=game_id)).filter_by(id=athlete_id) \
+                .first_or_404(description='Referee with id {} is not attending the event {}'.format(athlete_id, game_id))
             event.referees.remove(athlete)
         session.commit()
         return {'message': 'Resource successfully deleted'}, 204
@@ -79,12 +78,12 @@ class GameHandler:
 
     @staticmethod
     def fetch_all():
-        return GameModel.query.order_by(asc(GameModel.start)).all()
+        return GameModel.query.order_by(asc(GameModel.date)).all()
 
     @staticmethod
-    def fetch_by_id(event_id: int):
-        return GameModel.query.filter_by(id=event_id)\
-            .first_or_404(description='Event with id {} is not available'.format(event_id))
+    def fetch_by_id(game_id: int):
+        return GameModel.query.filter_by(id=game_id)\
+            .first_or_404(description='Event with id {} is not available'.format(game_id))
 
     @staticmethod
     def fetch_by_date(data: dict):
@@ -94,11 +93,11 @@ class GameHandler:
         @return: List(EventModel)
         """
         try:
-            start_timestamp = datetime.strptime(data['start_date'], DATESPAN_FORMAT)
+            start_timestamp = datetime.strptime(data['start_date'], DATE_FORMAT)
         except ValueError:
             raise ValueError('Unexpected date format for \'start_date\', expected \'YYYY-MM-DD\'')
         try:
-            end_timestamp = datetime.strptime(data['end_date'], DATESPAN_FORMAT).replace(hour=23, minute=59)
+            end_timestamp = datetime.strptime(data['end_date'], DATE_FORMAT).replace(hour=23, minute=59)
         except ValueError:
             raise ValueError('Unexpected date format for \'end_date\', expected \'YYYY-MM-DD\'')
 
@@ -108,45 +107,68 @@ class GameHandler:
 
     @staticmethod
     def add(organizer: AthleteModel, data: dict):
-        event = GameModel(name=data['name'], organizer_id=data['organizer_id'],
-                          total_places=data['total_places'],
-                          start=datetime.strptime(data['start'], DATETIME_FORMAT),
-                          duration=datetime.strptime(data['duration'], DURATION_FORMAT))
-
-        event.organizers.append(organizer)
+        game = GameModel(name=data['name'],
+                         exp_players_cnt=data['exp_players_cnt'],
+                         exp_goalies_cnt=data['exp_goalies_cnt'],
+                         exp_referees_cnt=data['exp_referees_cnt'],
+                         start_time=datetime.strptime(data['start_time'], TIME_FORMAT),
+                         end_time=datetime.strptime(data['end_time'], TIME_FORMAT),
+                         date=datetime.strptime(data['end_time'], DATE_FORMAT),
+                         est_price=data['est_price'],
+                         remarks=data['remarks'],
+                         other_costs=data['other_costs'],
+                         is_private=data['is_private'],
+                         goalie_renum=data['goalie_renum'],
+                         referee_renum=data['referee_renum'],
+                         exp_skill=data['exp_skill'],
+                         )
+        game.location = IceRinkModel.query.filter_by(id=data['location'])
+        game.organizers.append(organizer)
         try:
-            session.add(event)
+            session.add(game)
             session.commit()
         except e.SQLAlchemyError:
             return {"message": "An error occurred creating the event."}, 500
-        return GameHandler.json_full(event, att_details=True), 201
+        return GameHandler.json_full(game, att_details=True), 201
 
     @staticmethod
-    def delete(event_id: int):
-        event = GameHandler.fetch_by_id(event_id)
+    def delete(game_id: int):
+        event = GameHandler.fetch_by_id(game_id)
         session.delete(event)
         session.commit()
         return {'message': 'Event has been deleted'}, 204
 
     @staticmethod
-    def update(event_id: int, data: dict):
-        event = GameHandler.fetch_by_id(event_id)
-        event.name = data['name']
-        event.total_places = data['total_places']
-        event.start = datetime.strptime(data['start'], DATETIME_FORMAT)
-        event.duration = datetime.strptime(data['duration'], DURATION_FORMAT)
+    def update(game_id: int, data: dict):
+        game = GameHandler.fetch_by_id(game_id)
+        game.name = data['name']
+        game.exp_players_cnt = data['exp_players_cnt']
+        game.exp_goalies_cnt = data['exp_goalies_cnt']
+        game.exp_referees_cnt = data['exp_referees_cnt']
+        game.est_price = data['est_price']
+        game.remarks = data['remarks']
+        game.date = datetime.strptime(data['start'], DATE_FORMAT)
+        game.start_time = datetime.strptime(data['start_time'], TIME_FORMAT)
+        game.end_time = datetime.strptime(data['end_time'], TIME_FORMAT)
+        game.other_costs = data['other_costs']
+        game.is_private = data['is_private']
+        game.goalie_renum = data['goalie_renum']
+        game.referee_renum = data['referee_renum']
+        game.exp_skill = data['exp_skill']
+        # handle loc
+
         session.commit()
-        return GameHandler.json_full(event)
+        return GameHandler.json_full(game)
 
     @staticmethod
-    def json_full(event: GameModel, att_details=False):
-        event_json = event.json()
+    def json_full(game: GameModel, att_details=False):
+        event_json = game.json()
         organizers = AthleteModel.query\
-            .filter(AthleteModel.events_organized.any(id=event.id))\
+            .filter(AthleteModel.games_organized.any(id=game.id))\
             .all()
-        players = GameHandler.players.fetch_all(event.id)
-        goalies = GameHandler.goalies.fetch_all(event.id)
-        referees = GameHandler.referees.fetch_all(event.id)
+        players = GameHandler.players.fetch_all(game.id)
+        goalies = GameHandler.goalies.fetch_all(game.id)
+        referees = GameHandler.referees.fetch_all(game.id)
 
         if att_details:
             event_json['organizers'] = [o.json() for o in organizers]
