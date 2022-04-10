@@ -5,7 +5,6 @@ from sqlalchemy import asc
 from datetime import datetime, time, date
 from enum import Enum
 
-
 class AttendeeRole(Enum):
     PLAYER = 0
     ORGANIZER = 1
@@ -77,8 +76,8 @@ class GameHandler:
     referees = Attendee(AttendeeRole.REFEREE)
 
     @staticmethod
-    def fetch_all():
-        return GameModel.query.order_by(asc(GameModel.date)).all()
+    def fetch_page(page: int, per_page: int):
+        return GameModel.query.order_by(asc(GameModel.date)).paginate(page, per_page, error_out=False)
 
     @staticmethod
     def fetch_by_id(game_id: int):

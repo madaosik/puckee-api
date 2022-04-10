@@ -23,7 +23,17 @@ class Game(Resource):
     @staticmethod
     # @jwt_required()
     def get():
-        return [GameHandler.json_full(event, att_details=True) for event in GameHandler.fetch_all()]
+        page_info = request.args
+        if 'page_id' not in page_info:
+            app.logger.error('\'page_id\' has not been provided as GET parameter for /api/game')
+            return {'message': '\'page_id\' has not been provided as GET parameter for /api/game'}, 400
+        elif 'per_page' not in page_info:
+            app.logger.error('\'per_page\' has not been provided as GET parameter for /api/game')
+            return {'message': '\'per_page\' has not been provided as GET parameter /api/game'}, 400
+        app.logger.info('parsed GET params: \'start_date\': \'{}\', \'end_date\': \'{}\''
+                        .format(page_info['page_id'], page_info['per_page']))
+        return [GameHandler.json_full(event, att_details=True)
+                for event in GameHandler.fetch_page(int(page_info['page_id']), int(page_info['per_page'])).items]
 
     @staticmethod
     # @jwt_required()
