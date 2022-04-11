@@ -30,10 +30,17 @@ class Game(Resource):
         elif 'per_page' not in page_info:
             app.logger.error('\'per_page\' has not been provided as GET parameter for /api/game')
             return {'message': '\'per_page\' has not been provided as GET parameter /api/game'}, 400
-        app.logger.info('parsed GET params: \'start_date\': \'{}\', \'end_date\': \'{}\''
+        app.logger.info('parsed GET params: \'page_id\': \'{}\', \'per_page\': \'{}\''
                         .format(page_info['page_id'], page_info['per_page']))
-        return [GameHandler.json_full(event, att_details=True)
-                for event in GameHandler.fetch_page(int(page_info['page_id']), int(page_info['per_page'])).items]
+
+        page_id = int(page_info['page_id'])
+        games_page, next_page_id, prev_page_id = GameHandler.fetch_page(page_id, int(page_info['per_page']))
+        ret_dict = {'next_id': next_page_id, 'previous_id': prev_page_id, 'data': []}
+        for game in games_page:
+            ret_dict['data'].append(GameHandler.json_full(game, att_details=True))
+        # cus = [GameHandler.json_full(event, att_details=True)
+        print(ret_dict)
+        return ret_dict
 
     @staticmethod
     # @jwt_required()

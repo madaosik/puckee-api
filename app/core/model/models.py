@@ -145,6 +145,14 @@ class IceRinkModel(sqlDb.Model):
     price_per_hour = Column(Integer)
     games = sqlDb.relationship("GameModel", backref='location', lazy=True)
 
+    def json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "address": self.address,
+            "price_per_hour": self.price_per_hour,
+        }
+
 
 class AthleteRoleModel(sqlDb.Model):
     __tablename__ = 'athlete_role'

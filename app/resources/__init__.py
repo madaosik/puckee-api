@@ -1,4 +1,4 @@
-from app.resources import base, game, athlete, auth
+from app.resources import base, game, athlete, auth, icerink
 
 
 def configure_apis(api):
@@ -6,3 +6,4 @@ def configure_apis(api):
     game.configure(api)
     auth.configure(api)
     athlete.configure(api)
+    icerink.configure(api)

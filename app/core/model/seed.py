@@ -9,7 +9,7 @@ from app.core.model.models import GAME_NAME_LEN_LIMIT, \
     game_players, game_organizers, game_goalies, game_referees
 
 ATHLETES_CNT = 100
-EVENTS_CNT = 100
+EVENTS_CNT = 300
 PLAYERS_CNT = 50
 # Every fifth athlete is a goalie
 GOALIE_FREQ = 5
@@ -86,8 +86,8 @@ def seed_data():
     events = []
     for i in range(1, EVENTS_CNT + 1):
         exp_skill = random.randrange(1, 7)
-        start_datetime = fake.date_time_between(start_date=datetime(2022, 12, 22, 00, 00, 00),
-                                            end_date=datetime(2022, 12, 22, 00, 00, 00))
+        start_datetime = fake.date_time_between(start_date=datetime(2022, 4, 1, 00, 00, 00),
+                                                end_date=datetime(2022, 6, 22, 00, 00, 00))
         start_datetime_rounded = start_datetime + (datetime.min - start_datetime) % timedelta(minutes=15)
 
         if i % 2 == 0:

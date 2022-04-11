@@ -76,8 +76,16 @@ class GameHandler:
     referees = Attendee(AttendeeRole.REFEREE)
 
     @staticmethod
-    def fetch_page(page: int, per_page: int):
-        return GameModel.query.order_by(asc(GameModel.date)).paginate(page, per_page, error_out=False)
+    def fetch_page(page_id: int, per_page: int):
+        # print(page)
+        # print(per_page)
+        # cus = GameModel.query.order_by(asc(GameModel.date)).paginate(page, per_page, error_out=False)
+        games_page = GameModel.query.order_by(asc(GameModel.date)).paginate(page_id, per_page, error_out=False).items
+        next_page_id = None if len(games_page) < per_page else page_id + 1
+        prev_page_id = None if page_id == 1 else page_id - 1
+        # game_ids = [game.id for game in cus.items]
+        # print(game_ids)
+        return games_page, next_page_id, prev_page_id
 
     @staticmethod
     def fetch_by_id(game_id: int):
