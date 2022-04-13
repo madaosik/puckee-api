@@ -38,8 +38,6 @@ class Game(Resource):
         ret_dict = {'next_id': next_page_id, 'previous_id': prev_page_id, 'data': []}
         for game in games_page:
             ret_dict['data'].append(GameHandler.json_full(game, att_details=True))
-        # cus = [GameHandler.json_full(event, att_details=True)
-        print(ret_dict)
         return ret_dict
 
     @staticmethod
@@ -90,40 +88,7 @@ class GameUpdater(Game):
         return GameHandler.update(event_id, data)
 
 
-class GameParticipants(Resource):
-    parser = reqparse.RequestParser()  # only allow changes to the count of places, no name changes allowed
-    parser.add_argument('athlete_id', type=int, required=True,
-                        help='ID of the user attending the event')
-    parser.add_argument('athlete_role', type=str, required=True,
-                        help='Provide role of the athlete in \'athlete_role\'')
-
-    @staticmethod
-    @jwt_required()
-    def get(event_id: int):
-        return {
-            'player': [player.json() for player in GameHandler.players.fetch_all(event_id)],
-            'organizer': [organizer.json() for organizer in GameHandler.organizers.fetch_all(event_id)],
-            'goalie': [goalie.json() for goalie in GameHandler.goalies.fetch_all(event_id)],
-            'referee': [referee.json() for referee in GameHandler.referees.fetch_all(event_id)],
-        }
-
-    @staticmethod
-    # @jwt_required()
-    def post(game_id: int):
-        app.logger.info(f'parsed args: {GameParticipants.parser.parse_args()}')
-        data = GameParticipants.parser.parse_args()
-        return GameHandler.add_participant(int(game_id), data)
-
-    @staticmethod
-    @jwt_required()
-    def delete(game_id: int):
-        app.logger.info(f'parsed args: {GameParticipants.parser.parse_args()}')
-        data = GameParticipants.parser.parse_args()
-        return GameHandler.delete_participant(int(game_id), data)
-
-
 def configure(api):
     api.add_resource(Game, '/api/game')
     api.add_resource(GameByDate, '/api/game/date')
     api.add_resource(GameUpdater, '/api/game/<event_id>')
-    api.add_resource(GameParticipants, '/api/game/<game_id>/participants')
