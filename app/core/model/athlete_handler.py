@@ -30,6 +30,13 @@ class AthleteHandler:
             raise ValueError("Unexpected argument has been provided to the fetch function - expected 'id' or 'login'")
 
     @staticmethod
+    def fetch_page(page_id: int, per_page: int):
+        players_page = AthleteModel.query.paginate(page_id, per_page, error_out=False).items
+        next_page_id = None if len(players_page) < per_page else page_id + 1
+        prev_page_id = None if page_id == 1 else page_id - 1
+        return players_page, next_page_id, prev_page_id
+
+    @staticmethod
     def fetch_verified(data: dict):
         athlete = AthleteHandler.fetch(email=data['email'])
         if athlete is None:

@@ -4,6 +4,8 @@ from flask import current_app as app
 from flask import request
 from flask_jwt_extended import jwt_required
 
+from app.resources.utils import check_paging_params
+
 
 class Game(Resource):
     parser = reqparse.RequestParser()
@@ -24,12 +26,9 @@ class Game(Resource):
     # @jwt_required()
     def get():
         page_info = request.args
-        if 'page_id' not in page_info:
-            app.logger.error('\'page_id\' has not been provided as GET parameter for /api/game')
-            return {'message': '\'page_id\' has not been provided as GET parameter for /api/game'}, 400
-        elif 'per_page' not in page_info:
-            app.logger.error('\'per_page\' has not been provided as GET parameter for /api/game')
-            return {'message': '\'per_page\' has not been provided as GET parameter /api/game'}, 400
+        check_result = check_paging_params(page_info)
+        if check_result is not None:
+            return check_result
         app.logger.info('parsed GET params: \'page_id\': \'{}\', \'per_page\': \'{}\''
                         .format(page_info['page_id'], page_info['per_page']))
 

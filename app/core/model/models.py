@@ -111,6 +111,7 @@ class AthleteModel(sqlDb.Model):
     # roles = sqlDb.relationship('AthleteRoleModel', secondary=athlete_roles, lazy='subquery',
     #                            backref=sqlDb.backref('roles_assigned', lazy=True))
     roles = sqlDb.relationship("AthleteRoleAssociationModel", backref=sqlDb.backref('roles_assigned', lazy=True))
+    following = sqlDb.relationship("AthleteIFollowAssociationModel", backref=sqlDb.backref('athletes_followed', lazy=True))
     # perf_level = Column(Integer)
     last_login = Column(TIMESTAMP)
     last_modified = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
@@ -167,3 +168,10 @@ class AthleteRoleAssociationModel(sqlDb.Model):
     athlete_id = Column(ForeignKey('athlete.id'), primary_key=True)
     role_id = Column(ForeignKey('athlete_role.id'), primary_key=True)
     skill_level = Column(Float)
+
+
+class AthleteIFollowAssociationModel(sqlDb.Model):
+    __tablename__ = 'athletes_i_follow'
+    athlete_id = Column(ForeignKey('athlete.id'), primary_key=True)
+    followed_id = Column(ForeignKey('athlete.id'), primary_key=True)
+    opt_out_mode = Column(Boolean)
