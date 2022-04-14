@@ -130,8 +130,8 @@ class AthleteHandler:
             athlete_json['roles'].append(role)
 
         # Add list of requesting_id followers
-        # athlete_followers = AthleteHandler.fetch_followers(athlete.id)
-        # athlete_json['followers'] = []
+        athlete_followers = AthleteHandler.fetch_followers(athlete.id)
+        athlete_json['followers'] = len(athlete_followers)
         # [athlete_json['followers'].append(follower.from_id) for follower in athlete_followers]
 
         if requesting_id:
