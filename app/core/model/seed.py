@@ -8,15 +8,23 @@ from app.core.model.models import GAME_NAME_LEN_LIMIT, \
     AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, IceRinkModel, \
     game_players, game_organizers, game_goalies, game_referees, FollowersModel
 
+
+GAMES_CNT = 300
 ATHLETES_CNT = 400
-EVENTS_CNT = 300
-PLAYERS_CNT = 50
+PLAYERS_CNT = 300
+
 # Every fifth athlete is a goalie
 GOALIE_FREQ = 5
 GOALIE_MAX_CNT = 2
+
 # Every 13th athlete is a referee
 REF_FREQ = 13
 REF_MAX_CNT = 3
+
+# Every athlete follows every 5th athlete
+FOLLOWING_FREQ = 6
+# There is 20% probability that the follow relationship is "opt_out"
+OPT_OUT_MODE_PROB = 0.2
 
 
 # outputs True or False probabilistically based on the input of a random number from 0 to 1
@@ -109,9 +117,9 @@ def seed_data():
     follow_rel = []
     for i in range(1, ATHLETES_CNT + 1):
         # Every athlete follows 20% random others
-        followees = random.sample(range(1, ATHLETES_CNT + 1), int(ATHLETES_CNT/6))
+        followees = random.sample(range(1, ATHLETES_CNT + 1), int(ATHLETES_CNT/FOLLOWING_FREQ))
         for followee in followees:
-            rel_dict = {'from_id': i, 'to_id': followee, 'opt_out_mode': decision(0.2)}
+            rel_dict = {'from_id': i, 'to_id': followee, 'opt_out_mode': decision(OPT_OUT_MODE_PROB)}
             follow_rel.append(rel_dict)
 
     followers_table = FollowersModel.__table__
@@ -120,7 +128,7 @@ def seed_data():
 
     # Seeding the events
     events = []
-    for i in range(1, EVENTS_CNT + 1):
+    for i in range(1, GAMES_CNT + 1):
         exp_skill = random.randrange(1, 7)
         start_datetime = fake.date_time_between(start_date=datetime(2022, 4, 1, 00, 00, 00),
                                                 end_date=datetime(2022, 6, 22, 00, 00, 00))
@@ -171,7 +179,7 @@ def seed_data():
     ref_events_rel = []
     organizer_events_rel = []
 
-    for event_id in range(1, EVENTS_CNT + 1):
+    for event_id in range(1, GAMES_CNT + 1):
         # Seeding the players signed up of events (between 7 and 20)
         players_ind = random.sample(range(1, int(PLAYERS_CNT/2) + 1), random.randrange(7, 20))
         # We want to have 1-2 organizers

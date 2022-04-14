@@ -7,6 +7,7 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 from flask import current_app as app
 
+
 import re
 
 
@@ -140,3 +141,30 @@ class AthleteHandler:
     @staticmethod
     def log_login(athlete: AthleteModel):
         athlete.last_login = datetime.now().replace(microsecond=0)
+
+    @staticmethod
+    def follow(follower_id: int, followee_id: int, data: dict):
+        if follower_id == followee_id:
+            return {'message': 'the athlete ' + follower_id + ' cannot follow himself!'}, 400
+        follower = AthleteHandler.fetch(id=follower_id)
+        followee = AthleteHandler.fetch(id=followee_id)
+        follow_rel = FollowersModel(follower=follower, followee=followee, opt_out_mode=data['opt_out_mode'])
+        session.add(follow_rel)
+        try:
+            session.commit()
+        except e.IntegrityError:
+            return {'message': 'Athlete ' + follower_id + ' already follows athlete ' + followee_id}, 400
+        return {'follower_id': follower_id, 'followee_id': followee_id}, 200
+
+    @staticmethod
+    def unfollow(follower_id: int, followee_id: int):
+        follow_rel = FollowersModel.query\
+            .filter(FollowersModel.follower.has(id=follower_id))\
+            .filter(FollowersModel.followee.has(id=followee_id))\
+            .first()
+        if follow_rel is None:
+            return {'message': 'Athlete ' + follower_id + ' does not follow athlete ' + followee_id}, 400
+
+        session.delete(follow_rel)
+        session.commit()
+        return {'message': 'Resource successfully deleted'}, 204

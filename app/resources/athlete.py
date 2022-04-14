@@ -45,6 +45,24 @@ class Athlete(Resource):
         return AthleteHandler.add(data)
 
 
+class AthleteFollowed(Resource):
+    parser = reqparse.RequestParser()  # only allow changes to the count of places, no name changes allowed
+    parser.add_argument('opt_out_mode', type=bool, required=True,
+                        help='Please provide type of the follow relationship (true for opt_out)')
+
+    @staticmethod
+    # @jwt_required()
+    def post(follower_id: int, followee_id: int):
+        data = AthleteFollowed.parser.parse_args()
+        app.logger.info('parsed POST params: \'opt_out_mode\': \'{}\''.format(data['opt_out_mode']))
+        return AthleteHandler.follow(follower_id, followee_id, data)
+
+    @staticmethod
+    # @jwt_required()
+    def delete(follower_id: int, followee_id: int):
+        return AthleteHandler.unfollow(follower_id, followee_id)
+
+
 def configure(api):
     api.add_resource(Athlete, '/api/athlete')
-    #api.add_resource(AthleteUpdater, '/api/athlete/<athlete_id>')
+    api.add_resource(AthleteFollowed, '/api/athlete/<follower_id>/follow/<followee_id>')

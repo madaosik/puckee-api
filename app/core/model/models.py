@@ -108,6 +108,11 @@ class FollowersModel(sqlDb.Model):
     to_id = Column(ForeignKey('athlete.id'), primary_key=True)
     opt_out_mode = Column(Boolean)
 
+    # def __init__(self, follower_id: int, followee_id: int, opt_out_mode: bool):
+    #     self.from_id = follower_id
+    #     self.to_id = followee_id
+    #     self.opt_out_mode = opt_out_mode
+
 
 class AthleteModel(sqlDb.Model):
     __tablename__ = 'athlete'
