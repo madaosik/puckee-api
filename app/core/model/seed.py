@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from app.core.model.attendance_handler import AthleteRole
 from app.core.model.models import GAME_NAME_LEN_LIMIT, \
     AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, IceRinkModel, \
-    game_players, game_organizers, game_goalies, game_referees
+    game_players, game_organizers, game_goalies, game_referees, FollowersModel
 
 ATHLETES_CNT = 400
 EVENTS_CNT = 300
@@ -17,6 +17,11 @@ GOALIE_MAX_CNT = 2
 # Every 13th athlete is a referee
 REF_FREQ = 13
 REF_MAX_CNT = 3
+
+
+# outputs True or False probabilistically based on the input of a random number from 0 to 1
+def decision(probability):
+    return random.random() < probability
 
 
 def seed_data():
@@ -99,6 +104,19 @@ def seed_data():
     athlete_roles = AthleteRoleAssociationModel.__table__
     op.bulk_insert(athlete_roles, roles_rel)
     print('Athlete roles successfully seeded!')
+
+    # Seeding follow relationships
+    follow_rel = []
+    for i in range(1, ATHLETES_CNT + 1):
+        # Every athlete follows 20% random others
+        followees = random.sample(range(1, ATHLETES_CNT + 1), int(ATHLETES_CNT/6))
+        for followee in followees:
+            rel_dict = {'from_id': i, 'to_id': followee, 'opt_out_mode': decision(0.2)}
+            follow_rel.append(rel_dict)
+
+    followers_table = FollowersModel.__table__
+    op.bulk_insert(followers_table, follow_rel)
+    print('Follow relationships successfully seeded!')
 
     # Seeding the events
     events = []

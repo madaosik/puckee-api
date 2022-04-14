@@ -22,18 +22,18 @@ class Athlete(Resource):
     @staticmethod
     # @jwt_required()
     def get():
-        page_info = request.args
-        check_result = check_paging_params(page_info)
+        req_args = request.args
+        check_result = check_paging_params(req_args)
         if check_result is not None:
             return check_result
-        app.logger.info('parsed GET params: \'page_id\': \'{}\', \'per_page\': \'{}\''
-                        .format(page_info['page_id'], page_info['per_page']))
+        app.logger.info('parsed GET params: \'page_id\': \'{}\', \'per_page\': \'{}\', \'requesting_id\': \'{}\''
+                        .format(req_args['page_id'], req_args['per_page'], req_args['requesting_id']))
 
-        page_id = int(page_info['page_id'])
-        athletes_page, next_page_id, prev_page_id = AthleteHandler.fetch_page(page_id, int(page_info['per_page']))
+        page_id = int(req_args['page_id'])
+        athletes_page, next_page_id, prev_page_id = AthleteHandler.fetch_page(page_id, int(req_args['per_page']))
         ret_dict = {'next_id': next_page_id, 'previous_id': prev_page_id, 'data': []}
         for athlete in athletes_page:
-            ret_dict['data'].append(AthleteHandler.json_full(athlete))
+            ret_dict['data'].append(AthleteHandler.json_full(athlete, requesting_id=req_args['requesting_id']))
         return ret_dict
         # return [AthleteHandler.json_full(athlete) for athlete in AthleteHandler.fetch_all()]
 

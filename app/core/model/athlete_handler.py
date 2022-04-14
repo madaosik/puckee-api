@@ -1,6 +1,6 @@
 from flask_jwt_extended import create_access_token
 
-from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel
+from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, FollowersModel
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from werkzeug.security import check_password_hash
@@ -48,6 +48,28 @@ class AthleteHandler:
     @staticmethod
     def fetch_roles(athlete_id: int):
         return AthleteRoleAssociationModel.query.filter(AthleteRoleAssociationModel.roles_assigned.has(id=athlete_id)).all()
+
+    @staticmethod
+    def fetch_followers(athlete_id: int):
+        """
+        Fetches all followers of a given 'athlete_id'
+        @return [AthleteModel]
+        """
+        return FollowersModel.query.filter(FollowersModel.followee.has(id=athlete_id)).all()
+
+    @staticmethod
+    def is_followed(follower_id, followee_id):
+        """
+        Checks if 'analyzed_id' follows 'requested_id'
+        @return boolean
+        """
+        # Athlete I follow
+        followed_athlete = FollowersModel.query\
+            .filter(FollowersModel.follower.has(id=follower_id))\
+            .filter(FollowersModel.followee.has(id=followee_id))\
+            .first()
+        return True if followed_athlete else False
+
 
     @staticmethod
     def add(data: dict):
@@ -98,13 +120,21 @@ class AthleteHandler:
         return athlete.json()
 
     @staticmethod
-    def json_full(athlete: AthleteModel):
+    def json_full(athlete: AthleteModel, requesting_id=None):
         athlete_json = athlete.json()
         athlete_roles = AthleteHandler.fetch_roles(athlete.id)
         athlete_json['roles'] = []
         for athlete_role in athlete_roles:
             role = {'id': athlete_role.role_id, 'skill_level': athlete_role.skill_level}
             athlete_json['roles'].append(role)
+
+        # Add list of requesting_id followers
+        # athlete_followers = AthleteHandler.fetch_followers(athlete.id)
+        # athlete_json['followers'] = []
+        # [athlete_json['followers'].append(follower.from_id) for follower in athlete_followers]
+
+        if requesting_id:
+            athlete_json['is_followed'] = AthleteHandler.is_followed(requesting_id, athlete.id)
         return athlete_json
 
     @staticmethod

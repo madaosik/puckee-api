@@ -101,6 +101,14 @@ class GameModel(sqlDb.Model):
 #                             Column('skill_level', Float),
 #                             )
 
+
+class FollowersModel(sqlDb.Model):
+    __tablename__ = 'followers'
+    from_id = Column(ForeignKey('athlete.id'), primary_key=True)
+    to_id = Column(ForeignKey('athlete.id'), primary_key=True)
+    opt_out_mode = Column(Boolean)
+
+
 class AthleteModel(sqlDb.Model):
     __tablename__ = 'athlete'
 
@@ -108,13 +116,13 @@ class AthleteModel(sqlDb.Model):
     password_hash = Column(String(128), nullable=False)
     name = Column(String(50))
     email = Column(String(50), nullable=False)
-    # roles = sqlDb.relationship('AthleteRoleModel', secondary=athlete_roles, lazy='subquery',
-    #                            backref=sqlDb.backref('roles_assigned', lazy=True))
-    roles = sqlDb.relationship("AthleteRoleAssociationModel", backref=sqlDb.backref('roles_assigned', lazy=True))
-    following = sqlDb.relationship("AthleteIFollowAssociationModel", backref=sqlDb.backref('athletes_followed', lazy=True))
-    # perf_level = Column(Integer)
     last_login = Column(TIMESTAMP)
     last_modified = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
+
+    roles = sqlDb.relationship("AthleteRoleAssociationModel", backref=sqlDb.backref('roles_assigned', lazy=True))
+    # Inspired by https://stackoverflow.com/questions/25177451/sqlalchemy-self-referential-many-to-many-relationship-with-extra-column
+    followed_by = sqlDb.relationship('FollowersModel', backref='follower', primaryjoin=id == FollowersModel.from_id)
+    followee = sqlDb.relationship('FollowersModel', backref='followee', primaryjoin=id == FollowersModel.to_id)
 
     def __init__(self, email, password):
         self.password_hash = generate_password_hash(password, method='sha256')
@@ -170,8 +178,4 @@ class AthleteRoleAssociationModel(sqlDb.Model):
     skill_level = Column(Float)
 
 
-class AthleteIFollowAssociationModel(sqlDb.Model):
-    __tablename__ = 'athletes_i_follow'
-    athlete_id = Column(ForeignKey('athlete.id'), primary_key=True)
-    followed_id = Column(ForeignKey('athlete.id'), primary_key=True)
-    opt_out_mode = Column(Boolean)
+
