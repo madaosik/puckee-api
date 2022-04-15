@@ -62,6 +62,11 @@ class AthleteFollowed(Resource):
     def delete(follower_id: int, followee_id: int):
         return AthleteHandler.unfollow(follower_id, followee_id)
 
+    @staticmethod
+    def put(follower_id: int, followee_id: int):
+        data = AthleteFollowed.parser.parse_args()
+        app.logger.info('parsed PUT params: \'opt_out_mode\': \'{}\''.format(data['opt_out_mode']))
+        return AthleteHandler.update_follow_mode(follower_id, followee_id, data)
 
 def configure(api):
     api.add_resource(Athlete, '/api/athlete')

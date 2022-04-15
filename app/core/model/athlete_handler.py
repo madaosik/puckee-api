@@ -59,18 +59,16 @@ class AthleteHandler:
         return FollowersModel.query.filter(FollowersModel.followee.has(id=athlete_id)).all()
 
     @staticmethod
-    def is_followed(follower_id, followee_id):
+    def follow_status(follower_id, followee_id):
         """
         Checks if 'analyzed_id' follows 'requested_id'
         @return boolean
         """
         # Athlete I follow
-        followed_athlete = FollowersModel.query\
+        return FollowersModel.query\
             .filter(FollowersModel.follower.has(id=follower_id))\
             .filter(FollowersModel.followee.has(id=followee_id))\
             .first()
-        return True if followed_athlete else False
-
 
     @staticmethod
     def add(data: dict):
@@ -135,7 +133,11 @@ class AthleteHandler:
         # [athlete_json['followers'].append(follower.from_id) for follower in athlete_followers]
 
         if requesting_id:
-            athlete_json['is_followed'] = AthleteHandler.is_followed(requesting_id, athlete.id)
+            follow_rel = AthleteHandler.follow_status(requesting_id, athlete.id)
+            if follow_rel:
+                athlete_json['follow'] = {'followed': True, 'opt_out_mode': follow_rel.opt_out_mode}
+            else:
+                athlete_json['follow'] = None
         return athlete_json
 
     @staticmethod
@@ -157,12 +159,19 @@ class AthleteHandler:
         return {'follower_id': follower_id, 'followee_id': followee_id}, 200
 
     @staticmethod
+    def update_follow_mode(follower_id: int, followee_id: int, data: dict):
+        follow_rel = AthleteHandler.follow_status(follower_id, followee_id)
+        if not follow_rel:
+            return {'message': 'Athlete ' + follower_id + ' does not follow athlete ' + followee_id}, 400
+
+        follow_rel.opt_out_mode = data['opt_out_mode']
+        session.commit()
+        return {'message': 'Resource successfully updated'}, 204
+
+    @staticmethod
     def unfollow(follower_id: int, followee_id: int):
-        follow_rel = FollowersModel.query\
-            .filter(FollowersModel.follower.has(id=follower_id))\
-            .filter(FollowersModel.followee.has(id=followee_id))\
-            .first()
-        if follow_rel is None:
+        follow_rel = AthleteHandler.follow_status(follower_id, followee_id)
+        if not follow_rel:
             return {'message': 'Athlete ' + follower_id + ' does not follow athlete ' + followee_id}, 400
 
         session.delete(follow_rel)
