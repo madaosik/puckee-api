@@ -39,7 +39,7 @@ class AthleteLogin(Resource):
         app.logger.info(f'parsed args: {data}')
         verified_athlete = AthleteHandler.fetch_verified(data)
         if not verified_athlete:
-            return {"message": "Bad username or password"}, 401
+            return {"message": "Neznámé uživatelské jméno nebo neplatné heslo!"}, 401
 
         AthleteHandler.log_login(verified_athlete)
         return {

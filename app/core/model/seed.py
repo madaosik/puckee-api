@@ -167,6 +167,7 @@ def seed_data():
                  'exp_skill': exp_skill,
                  'est_price': random.choice([200, 250, 300]),
                  'other_costs': random.choice([50, 100, 0, 150, 200]),
+                 'remarks': fake.paragraph(nb_sentences=3)
                  }
         events.append(event)
 

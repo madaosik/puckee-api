@@ -70,18 +70,18 @@ class GameByDate(Resource):
 
 class GameUpdater(Game):
     @staticmethod
-    @jwt_required()
+    # @jwt_required()
     def get(event_id: int):
         event = GameHandler.fetch_by_id(event_id)
         return GameHandler.json_full(event, att_details=True)
 
     @staticmethod
-    @jwt_required()
+    # @jwt_required()
     def delete(event_id: int):
         return GameHandler.delete(event_id)
 
     @staticmethod
-    @jwt_required()
+    # @jwt_required()
     def put(event_id: int):
         data = Game.parser.parse_args()
         return GameHandler.update(event_id, data)

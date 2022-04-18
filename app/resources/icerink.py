@@ -6,7 +6,7 @@ from flask import request
 from flask_jwt_extended import jwt_required
 
 
-class IceRink(Resource):
+class IceRinks(Resource):
     @staticmethod
     # @jwt_required()
     def get():
@@ -26,5 +26,15 @@ class IceRink(Resource):
     #     return AthleteHandler.add(data)
 
 
+class IceRink(Resource):
+    @staticmethod
+    # @jwt_required()
+    def get(rink_id: int):
+        rink = IceRinkHandler.fetch(id=rink_id)
+        if not rink:
+            return {'message': 'Rink with the requested id ' + str(rink_id) + ' could not be found!'}, 404
+        return {'id': rink.id, 'name': rink.name, 'address': rink.address, 'price_per_hour': rink.price_per_hour}, 200
+
 def configure(api):
-    api.add_resource(IceRink, '/api/icerink')
+    api.add_resource(IceRinks, '/api/icerink')
+    api.add_resource(IceRink, '/api/icerink/<rink_id>')
