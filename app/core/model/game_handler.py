@@ -1,4 +1,5 @@
-from app.core.model.attendance_handler import PlayersInGame, GoaliesInGame, RefereesInGame, OrganizersInGame, AthleteRole
+from app.core.model.attendance_handler import PlayersInGame, GoaliesInGame, RefereesInGame, OrganizersInGame, \
+    AthleteRole, AnonymPlayersInGame, AnonymGoaliesInGame, AnonymRefereesInGame
 from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT
 from app.core.db_base import session
 from sqlalchemy import exc as e
@@ -7,10 +8,13 @@ from datetime import datetime
 
 
 class GameHandler:
-    players = PlayersInGame()
     organizers = OrganizersInGame()
+    players = PlayersInGame()
+    anonym_players = AnonymPlayersInGame()
     goalies = GoaliesInGame()
+    anonym_goalies = AnonymGoaliesInGame()
     referees = RefereesInGame()
+    anonym_referees = AnonymRefereesInGame()
 
     @staticmethod
     def fetch_page(page_id: int, per_page: int):
@@ -106,19 +110,28 @@ class GameHandler:
             .filter(AthleteModel.games_organized.any(id=game.id))\
             .all()
         players = GameHandler.players.fetch_all(game.id)
+        anonym_players = GameHandler.anonym_players.fetch_all(game.id)
         goalies = GameHandler.goalies.fetch_all(game.id)
+        anonym_goalies = GameHandler.anonym_goalies.fetch_all(game.id)
         referees = GameHandler.referees.fetch_all(game.id)
+        anonym_referees = GameHandler.anonym_referees.fetch_all(game.id)
 
         if att_details:
             event_json['organizers'] = [o.json() for o in organizers]
             event_json['players'] = [o.json() for o in players]
+            event_json['anonym_players'] = [o.json() for o in anonym_players]
             event_json['goalies'] = [o.json() for o in goalies]
+            event_json['anonym_goalies'] = [o.json() for o in anonym_goalies]
             event_json['referees'] = [o.json() for o in referees]
+            event_json['anonym_referees'] = [o.json() for o in anonym_referees]
         else:
             event_json['organizers'] = [o.id for o in organizers]
             event_json['players'] = [o.id for o in players]
+            event_json['anonym_players'] = [o.id for o in anonym_players]
             event_json['goalies'] = [o.id for o in goalies]
+            event_json['anonym_goalies'] = [o.id for o in anonym_goalies]
             event_json['referees'] = [o.id for o in referees]
+            event_json['anonym_referees'] = [o.id for o in anonym_referees]
 
         return event_json
 

@@ -68,6 +68,18 @@ class AthleteFollowed(Resource):
         app.logger.info('parsed PUT params: \'opt_out_mode\': \'{}\''.format(data['opt_out_mode']))
         return AthleteHandler.update_follow_mode(follower_id, followee_id, data)
 
+
+class AthleteSearch(Resource):
+    @staticmethod
+    def get():
+        data = request.args
+        if len(data) < 2:
+            return {'message': 'Search parameters have not been provided!'}, 404
+
+        return AthleteHandler.search(data)
+
+
 def configure(api):
     api.add_resource(Athlete, '/api/athlete')
+    api.add_resource(AthleteSearch, '/api/athlete/search')
     api.add_resource(AthleteFollowed, '/api/athlete/<follower_id>/follow/<followee_id>')

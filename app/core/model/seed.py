@@ -6,11 +6,12 @@ from datetime import datetime, timedelta
 from app.core.model.attendance_handler import AthleteRole
 from app.core.model.models import GAME_NAME_LEN_LIMIT, \
     AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, IceRinkModel, \
-    game_players, game_organizers, game_goalies, game_referees, FollowersModel
-
+    game_players, game_anonym_players, game_organizers, game_goalies, game_anonym_goalies, game_referees, \
+    game_anonym_referees, FollowersModel, AnonymousAthleteModel
 
 GAMES_CNT = 300
 ATHLETES_CNT = 400
+ANONYM_ATHLETES_CNT = int(ATHLETES_CNT/8)
 PLAYERS_CNT = 300
 
 # Every fifth athlete is a goalie
@@ -52,13 +53,15 @@ def seed_data():
                 {'name': 'Zimní stadion Vyškov', 'address': '', 'price_per_hour': 3750},
                 ]
     op.bulk_insert(ice_rink_table, ice_rink_array)
-
-    athlete_table = AthleteModel.__table__
     Faker.seed(0)
     fake = Faker()
+
+    #####################################################################################################
+    #####################################################################################################
+    # Seeding all the athletes
+    athlete_table = AthleteModel.__table__
     athletes = []
 
-    # Seeding all the athletes
     passwd = 'passwd'
     athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
                     'name': 'Adam Tester',
@@ -70,6 +73,7 @@ def seed_data():
                     'email': 'b@b.com',
                     }
     athletes.append(athlete_dict)
+
     for i in range(3, ATHLETES_CNT + 1):
         passwd = 'pass' + str(i)
         athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
@@ -80,6 +84,8 @@ def seed_data():
     op.bulk_insert(athlete_table, athletes)
     print('Athletes successfully seeded!')
 
+    #######################################################################################################
+    #######################################################################################################
     # Seeding the user, player, goalie and referee roles
     roles_rel = []
 
@@ -97,15 +103,23 @@ def seed_data():
     role_goalie_2 = {'role_id': int(AthleteRole.GOALIE), 'athlete_id': 2, 'skill_level': 1.5}
     roles_rel.append(role_goalie_2)
 
+    # Now let's seed the roles of the rest of athletes
     for i in range(3, ATHLETES_CNT + 1):
+        # Every athlete is a user
         role_user = {'role_id': int(AthleteRole.USER), 'athlete_id': i, 'skill_level': 0.0}
         roles_rel.append(role_user)
-        if (i < 51) or (i % 2 == 0):
-            role_player = {'role_id': int(AthleteRole.PLAYER), 'athlete_id': i, 'skill_level': 1.5}
+
+        # First ATHLETES_CNT/2 athletes are players and then there are some additional ones
+        if (i < (int(ATHLETES_CNT/2) + 1)) or (i % 2 == 0):
+            role_player = {'role_id': int(AthleteRole.PLAYER), 'athlete_id': i, 'skill_level': random.uniform(1.0, 6.0)}
             roles_rel.append(role_player)
+
+        # Every GOALIE_FREQ athlete is a goalie
         if i % GOALIE_FREQ == 0:
-            role_goalie = {'role_id': int(AthleteRole.GOALIE), 'athlete_id': i, 'skill_level': 3.7}
+            role_goalie = {'role_id': int(AthleteRole.GOALIE), 'athlete_id': i, 'skill_level': random.uniform(1.0, 6.0)}
             roles_rel.append(role_goalie)
+
+        # Every REF_FREQ athlete is a referee
         if i % REF_FREQ == 0:
             role_referee = {'role_id': int(AthleteRole.REFEREE), 'athlete_id': i, 'skill_level': 0.0}
             roles_rel.append(role_referee)
@@ -126,7 +140,10 @@ def seed_data():
     op.bulk_insert(followers_table, follow_rel)
     print('Follow relationships successfully seeded!')
 
-    # Seeding the events
+    #####################################################################################################
+    #####################################################################################################
+    # Creating the events
+
     events = []
     for i in range(1, GAMES_CNT + 1):
         exp_skill = random.randrange(1, 7)
@@ -175,39 +192,81 @@ def seed_data():
     op.bulk_insert(events_table, events)
     print('Events successfully seeded!')
 
+    #####################################################################################################
+    #####################################################################################################
+
+    # Seeding anonymous athletes
+    anonym_athlete_table = AnonymousAthleteModel.__table__
+    anonym_athletes = []
+    for i in range(1, ANONYM_ATHLETES_CNT + 1):
+        anonym_athlete_dict = {'name': fake.name(),
+                               'added_by': random.randrange(1, ATHLETES_CNT + 1),
+                               'added_in': random.randrange(1, GAMES_CNT + 1),
+                                }
+        anonym_athletes.append(anonym_athlete_dict)
+    op.bulk_insert(anonym_athlete_table, anonym_athletes)
+    print('Anonymous athletes successfully seeded!')
+
+    #####################################################################################################
+    #####################################################################################################
+    # Seeding the event participants
+
     player_events_rel = []
+    anonym_player_events_rel = []
     goalie_events_rel = []
+    anonym_goalie_events_rel = []
     ref_events_rel = []
+    anonym_referee_events_rel = []
     organizer_events_rel = []
 
     for event_id in range(1, GAMES_CNT + 1):
-        # Seeding the players signed up of events (between 7 and 20)
-        players_ind = random.sample(range(1, int(PLAYERS_CNT/2) + 1), random.randrange(7, 20))
         # We want to have 1-2 organizers
-        organizers_ind = random.sample(range(1, ATHLETES_CNT), random.randrange(1, 3))
+        organizers_ind = random.sample(range(1, ATHLETES_CNT), random.randrange(1, 4))
 
-        # We want to have 0-3 goalies
-        goalies_ind = random.sample(range(0, ATHLETES_CNT, GOALIE_FREQ), random.randrange(0, GOALIE_MAX_CNT+1))
+        # Seeding the players signed up of events (between 7 and 16)
+        players_ind = random.sample(range(1, int(PLAYERS_CNT/2) + 1), random.randrange(7, 17))
+        # Seeding the anonymous players added for the events (between 1 and 4)
+        anonym_players_ind = random.sample(range(1, ANONYM_ATHLETES_CNT + 1), random.randrange(1, 5))
+
+        # We want to have 0-1 registered goalies and 0-1 unregistered ones
+        goalies_ind = random.sample(range(0, ATHLETES_CNT, GOALIE_FREQ), random.randrange(0, GOALIE_MAX_CNT))
+        # Starting index of range is 1 because anonymous athletes are not assigned any roles whatsoever
+        # (no need to skip indexes)
+        anonym_goalies_ind = random.sample(range(1, ANONYM_ATHLETES_CNT), random.randrange(0, GOALIE_MAX_CNT))
+
         # Replace non-existing goalie with id 0
         goalies_ind = [random.randrange(GOALIE_FREQ, PLAYERS_CNT, GOALIE_FREQ) if x == 0 else x for x in goalies_ind]
+        # anonym_goalies_ind = [random.randrange(GOALIE_FREQ, PLAYERS_CNT, GOALIE_FREQ) if x == 0 else x for x in anonym_goalies_ind]
         # For duplicit values removal
         goalies_ind = list(set(goalies_ind))
+        anonym_goalies_ind = list(set(anonym_goalies_ind))
 
-
-        # We want to have REF_MAX_CNT referees
-        referee_ind = random.sample(range(0, ATHLETES_CNT, REF_FREQ), random.randrange(0, REF_MAX_CNT+1))
+        # We want to have 0-1 registered referees and 0-1 unregistered ones
+        referee_ind = random.sample(range(0, ATHLETES_CNT, REF_FREQ), random.randrange(0, REF_MAX_CNT-1))
+        # Starting index of range is 1 because anonymous athletes are not assigned any roles whatsoever
+        # (no need to skip indexes)
+        anonym_referee_ind = random.sample(range(1, ANONYM_ATHLETES_CNT), random.randrange(0, REF_MAX_CNT - 1))
         # Replace non-existing referee with id 0
         referee_ind = [random.randrange(REF_FREQ, PLAYERS_CNT, REF_FREQ) if x == 0 else x for x in referee_ind]
         # For duplicit values removal
         referee_ind = list(set(referee_ind))
+        anonym_referee_ind = list(set(anonym_referee_ind))
 
         for player_id in players_ind:
             player_event = {'game_id': int(event_id), 'athlete_id': int(player_id)}
             player_events_rel.append(player_event)
 
+        for player_id in anonym_players_ind:
+            anonym_player_event = {'game_id': int(event_id), 'anonym_id': int(player_id)}
+            anonym_player_events_rel.append(anonym_player_event)
+
         for goalie_id in goalies_ind:
             goalie_event = {'athlete_id': goalie_id, 'game_id': event_id}
             goalie_events_rel.append(goalie_event)
+
+        for goalie_id in anonym_goalies_ind:
+            anonym_goalie_event = {'anonym_id': goalie_id, 'game_id': event_id}
+            anonym_goalie_events_rel.append(anonym_goalie_event)
 
         for organizer_id in organizers_ind:
             organizers_event = {'athlete_id': organizer_id, 'game_id': event_id}
@@ -217,10 +276,19 @@ def seed_data():
             ref_event = {'athlete_id': ref_id, 'game_id': event_id}
             ref_events_rel.append(ref_event)
 
-    op.bulk_insert(game_players, player_events_rel)
-    op.bulk_insert(game_goalies, goalie_events_rel)
+        for ref_id in anonym_referee_ind:
+            anonym_referee_event = {'anonym_id': ref_id, 'game_id': event_id}
+            anonym_referee_events_rel.append(anonym_referee_event)
+
     op.bulk_insert(game_organizers, organizer_events_rel)
+    op.bulk_insert(game_players, player_events_rel)
+    op.bulk_insert(game_anonym_players, anonym_player_events_rel)
+    op.bulk_insert(game_goalies, goalie_events_rel)
+    op.bulk_insert(game_anonym_goalies, anonym_goalie_events_rel)
     op.bulk_insert(game_referees, ref_events_rel)
+    op.bulk_insert(game_anonym_referees, anonym_referee_events_rel)
+
     print('Event participants successfully seeded!')
+
 
 

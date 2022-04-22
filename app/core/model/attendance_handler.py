@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-from app.core.model.models import AthleteModel, GameModel
+from app.core.model.models import AthleteModel, GameModel, AnonymousAthleteModel
 from app.core.db_base import session
 
 
@@ -21,7 +21,7 @@ class PlayersInGame:
     def add(game: GameModel, athlete_id: int):
         athlete = AthleteModel.query.filter_by(id=athlete_id) \
             .first_or_404(description='Athlete with id={} is not available'.format(athlete_id))
-        if len(game.players) < game.exp_players_cnt:
+        if len(game.players + game.anonym_players) < game.exp_players_cnt:
             game.players.append(athlete)
             session.commit()
             return {'game_id': game.id, 'athlete_id': athlete.id, 'role_id': AthleteRole.PLAYER}, 200
@@ -32,6 +32,33 @@ class PlayersInGame:
     def delete(game: GameModel, athlete_id: int):
         athlete = AthleteModel.query \
             .filter(AthleteModel.games_played.any(id=game.id)).filter_by(id=athlete_id) \
+            .first_or_404(description='Athlete with id {} is not playing the event {}'.format(athlete_id, game.id))
+        game.players.remove(athlete)
+        session.commit()
+        return {'message': 'Player successfully removed from game ' + str(game.id)}, 204
+
+
+class AnonymPlayersInGame:
+    @staticmethod
+    def fetch_all(game_id: int):
+        return AnonymousAthleteModel.query.filter(AnonymousAthleteModel.games_anonym_played.any(id=game_id)).all()
+
+    @staticmethod
+    def add(game: GameModel, athlete_id: int):
+        athlete = AnonymousAthleteModel.query.filter_by(id=athlete_id) \
+            .first_or_404(description='Anonymous athlete with id={} is not available'.format(athlete_id))
+        if (len(game.players) + len(game.anonym_players)) < game.exp_players_cnt:
+            game.anonym_players.append(athlete)
+            session.commit()
+            return {'game_id': game.id, 'anonym_athlete_id': athlete.id, 'role_id': AthleteRole.PLAYER}, 200
+        else:
+            return {'message': 'Could not add the anonym player to the game as it is already full '
+                               + str(game.exp_players_cnt)}, 404
+
+    @staticmethod
+    def delete(game: GameModel, athlete_id: int):
+        athlete = AnonymousAthleteModel.query \
+            .filter(AnonymousAthleteModel.games_anonym_played.any(id=game.id)).filter_by(id=athlete_id) \
             .first_or_404(description='Athlete with id {} is not playing the event {}'.format(athlete_id, game.id))
         game.players.remove(athlete)
         session.commit()
@@ -65,6 +92,33 @@ class GoaliesInGame:
         return {'message': 'Goalie successfully removed from game ' + str(game.id)}, 204
 
 
+class AnonymGoaliesInGame:
+    @staticmethod
+    def fetch_all(game_id: int):
+        return AnonymousAthleteModel.query.filter(AnonymousAthleteModel.games_anonym_goalied.any(id=game_id)).all()
+
+    @staticmethod
+    def add(game: GameModel, athlete_id: int):
+        athlete = AnonymousAthleteModel.query.filter_by(id=athlete_id) \
+            .first_or_404(description='Athlete with id={} is not available'.format(athlete_id))
+        if (len(game.goalies) + len(game.anonym_goalies)) < game.exp_goalies_cnt:
+            game.anonym_goalies.append(athlete)
+            session.commit()
+            return {'game_id': game.id, 'athlete_id': athlete.id, 'role_id': AthleteRole.GOALIE}, 200
+        else:
+            return {'message': 'Could not add the goalie to the game as it is already full ' + str(
+                game.exp_goalies_cnt)}, 404
+
+    @staticmethod
+    def delete(game: GameModel, athlete_id: int):
+        athlete = AnonymousAthleteModel.query \
+            .filter(AnonymousAthleteModel.games_anonym_goalied.any(id=game.id)).filter_by(id=athlete_id) \
+            .first_or_404(description='Goalie with id {} is not attending the event {}'.format(athlete_id, game.id))
+        game.anonym_goalies.remove(athlete)
+        session.commit()
+        return {'message': 'Goalie successfully removed from game ' + str(game.id)}, 204
+
+
 class RefereesInGame:
     @staticmethod
     def fetch_all(game_id: int):
@@ -88,6 +142,33 @@ class RefereesInGame:
             .filter(AthleteModel.games_refereed.any(id=game.id)).filter_by(id=athlete_id) \
             .first_or_404(description='Referee with id {} is not refereeing the event {}'.format(athlete_id, game.id))
         game.referees.remove(athlete)
+        session.commit()
+        return {'message': 'Referee successfully removed from game ' + str(game.id)}, 204
+
+
+class AnonymRefereesInGame:
+    @staticmethod
+    def fetch_all(game_id: int):
+        return AnonymousAthleteModel.query.filter(AnonymousAthleteModel.games_anonym_refereed.any(id=game_id)).all()
+
+    @staticmethod
+    def add(game: GameModel, athlete_id: int):
+        athlete = AnonymousAthleteModel.query.filter_by(id=athlete_id) \
+            .first_or_404(description='Athlete with id={} is not available'.format(athlete_id))
+        if (len(game.referees) + len(game.anonym_referees)) < game.exp_referees_cnt:
+            game.anonym_referees.append(athlete)
+            session.commit()
+            return {'game_id': game.id, 'athlete_id': athlete.id, 'role_id': AthleteRole.REFEREE}, 200
+        else:
+            return {'message': 'Could not add the referee to the game as it is already full ' + str(
+                game.exp_referees_cnt)}, 404
+
+    @staticmethod
+    def delete(game: GameModel, athlete_id: int):
+        athlete = AnonymousAthleteModel.query \
+            .filter(AnonymousAthleteModel.games_anonym_refereed.any(id=game.id)).filter_by(id=athlete_id) \
+            .first_or_404(description='Referee with id {} is not refereeing the event {}'.format(athlete_id, game.id))
+        game.anonym_referees.remove(athlete)
         session.commit()
         return {'message': 'Referee successfully removed from game ' + str(game.id)}, 204
 

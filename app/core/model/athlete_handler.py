@@ -177,3 +177,19 @@ class AthleteHandler:
         session.delete(follow_rel)
         session.commit()
         return {'message': 'Resource successfully deleted'}, 204
+
+    @staticmethod
+    def search(data: dict):
+        if data['name']:
+            role_id = int(data['role_id'])
+            athletes = AthleteModel.query\
+                .filter(AthleteModel.name.contains(data['name']), AthleteModel.roles.any(role_id=role_id)).all()
+            ret_data = []
+            [ret_data.append(AthleteHandler.json_full(a)) for a in athletes]
+            return ret_data
+        else:
+            return {
+                'message': 'Unexpected GET search parameter!'
+            }, 400
+
+

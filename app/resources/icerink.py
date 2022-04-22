@@ -10,13 +10,15 @@ class IceRinks(Resource):
     @staticmethod
     # @jwt_required()
     def get():
-        ret_dict = {}
+        ret_arr = []
         for rink in IceRinkHandler.fetch_all():
-            ret_dict[rink.id] = {'name': rink.name,
-                                 'address': rink.address,
-                                 'price_per_hour': rink.price_per_hour }
+            ret_arr.append({   'id': rink.id,
+                                'name': rink.name,
+                                'address': rink.address,
+                                'price_per_hour': rink.price_per_hour }
+                            )
 
-        return ret_dict, 200
+        return ret_arr, 200
 
     # @staticmethod
     # # @jwt_required()

@@ -15,25 +15,40 @@ GAME_NAME_LEN_LIMIT = 25
 
 sqlDb: SQLAlchemy = SQLAlchemy(session_options={"autoflush": True})
 
+game_organizers = sqlDb.Table('game_organizers',
+                              Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
+                              Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
+                              )
+
 game_players = sqlDb.Table('game_players',
                            Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
                            Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
                            )
 
-game_organizers = sqlDb.Table('game_organizers',
-                              Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
-                              Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
-                              )
+game_anonym_players = sqlDb.Table('game_anonym_players',
+                                  Column('anonym_id', Integer, ForeignKey('athlete_anonymous.id'), primary_key=True),
+                                  Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
+                           )
 
 game_goalies = sqlDb.Table('game_goalies',
                            Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
                            Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
                            )
 
+game_anonym_goalies = sqlDb.Table('game_anonym_goalies',
+                                  Column('anonym_id', Integer, ForeignKey('athlete_anonymous.id'), primary_key=True),
+                                  Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
+                           )
+
 game_referees = sqlDb.Table('game_referees',
                             Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
                             Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
                             )
+
+game_anonym_referees = sqlDb.Table('game_anonym_referees',
+                                  Column('anonym_id', Integer, ForeignKey('athlete_anonymous.id'), primary_key=True),
+                                  Column('game_id', Integer, ForeignKey('game.id'), primary_key=True),
+                           )
 
 
 class GameModel(sqlDb.Model):
@@ -58,12 +73,18 @@ class GameModel(sqlDb.Model):
     referee_renum = Column(Integer, nullable=False)
     players = sqlDb.relationship('AthleteModel', secondary=game_players, lazy='subquery',
                                  backref=sqlDb.backref('games_played', lazy=True))
+    anonym_players = sqlDb.relationship('AnonymousAthleteModel', secondary=game_anonym_players, lazy='subquery',
+                                        backref=sqlDb.backref('games_anonym_played', lazy=True))
     organizers = sqlDb.relationship('AthleteModel', secondary=game_organizers, lazy='subquery',
                                     backref=sqlDb.backref('games_organized', lazy=True))
     goalies = sqlDb.relationship('AthleteModel', secondary=game_goalies, lazy='subquery',
                                  backref=sqlDb.backref('games_goalied', lazy=True))
+    anonym_goalies = sqlDb.relationship('AnonymousAthleteModel', secondary=game_anonym_goalies, lazy='subquery',
+                                        backref=sqlDb.backref('games_anonym_goalied', lazy=True))
     referees = sqlDb.relationship('AthleteModel', secondary=game_referees, lazy='subquery',
                                   backref=sqlDb.backref('games_refereed', lazy=True))
+    anonym_referees = sqlDb.relationship('AnonymousAthleteModel', secondary=game_anonym_referees, lazy='subquery',
+                                         backref=sqlDb.backref('games_anonym_refereed', lazy=True))
     exp_skill = Column(Integer, nullable=False)
     time_created = Column(TIMESTAMP, nullable=False, server_default=func.now())
     last_update = Column(TIMESTAMP, nullable=False, server_default=func.now(), server_onupdate=func.now())
@@ -100,6 +121,23 @@ class GameModel(sqlDb.Model):
 #                             Column('athlete_id', Integer, ForeignKey('athlete.id'), primary_key=True),
 #                             Column('skill_level', Float),
 #                             )
+class AnonymousAthleteModel(sqlDb.Model):
+    __tablename__ = 'athlete_anonymous'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(20))
+    added_by = Column(Integer, ForeignKey('athlete.id'), nullable=False)
+    added_in = Column(Integer, ForeignKey('game.id'), nullable=False)
+    created = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
+
+    def json(self):
+        creation_time_formatted = self.created.isoformat()
+        return {"id": self.id,
+                "name": self.name,
+                "added_by": self.added_by,
+                "added_in": self.added_in,
+                "creation_time": creation_time_formatted,
+                }
 
 
 class FollowersModel(sqlDb.Model):
