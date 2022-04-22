@@ -1,3 +1,4 @@
+from app.core.model.athlete_handler import AthleteHandler
 from app.core.model.attendance_handler import PlayersInGame, GoaliesInGame, RefereesInGame, OrganizersInGame, \
     AthleteRole, AnonymPlayersInGame, AnonymGoaliesInGame, AnonymRefereesInGame
 from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT
@@ -104,8 +105,12 @@ class GameHandler:
         return GameHandler.json_full(game)
 
     @staticmethod
-    def json_full(game: GameModel, att_details=False):
-        event_json = game.json()
+    def json_full(game: GameModel, req_args: dict, att_details=False):
+        req_id = None
+        if 'requesting_id' in req_args:
+            req_id = req_args['requesting_id']
+
+        game_json = game.json()
         organizers = AthleteModel.query\
             .filter(AthleteModel.games_organized.any(id=game.id))\
             .all()
@@ -117,23 +122,43 @@ class GameHandler:
         anonym_referees = GameHandler.anonym_referees.fetch_all(game.id)
 
         if att_details:
-            event_json['organizers'] = [o.json() for o in organizers]
-            event_json['players'] = [o.json() for o in players]
-            event_json['anonym_players'] = [o.json() for o in anonym_players]
-            event_json['goalies'] = [o.json() for o in goalies]
-            event_json['anonym_goalies'] = [o.json() for o in anonym_goalies]
-            event_json['referees'] = [o.json() for o in referees]
-            event_json['anonym_referees'] = [o.json() for o in anonym_referees]
-        else:
-            event_json['organizers'] = [o.id for o in organizers]
-            event_json['players'] = [o.id for o in players]
-            event_json['anonym_players'] = [o.id for o in anonym_players]
-            event_json['goalies'] = [o.id for o in goalies]
-            event_json['anonym_goalies'] = [o.id for o in anonym_goalies]
-            event_json['referees'] = [o.id for o in referees]
-            event_json['anonym_referees'] = [o.id for o in anonym_referees]
+            game_json['organizers'] = []
+            for o in organizers:
+                o_json = o.json()
+                o_json = AthleteHandler.add_follow_status(o_json, o.id, req_id)
+                game_json['organizers'].append(o_json)
 
-        return event_json
+            game_json['players'] = []
+            for p in players:
+                p_json = p.json()
+                p_json = AthleteHandler.add_follow_status(p_json, p.id, req_id)
+                game_json['players'].append(p_json)
+
+            game_json['goalies'] = []
+            for g in goalies:
+                g_json = g.json()
+                g_json = AthleteHandler.add_follow_status(g_json, g.id, req_id)
+                game_json['goalies'].append(g_json)
+
+            game_json['referees'] = []
+            for r in referees:
+                r_json = r.json()
+                r_json = AthleteHandler.add_follow_status(r_json, r.id, req_id)
+                game_json['referees'].append(r_json)
+
+            game_json['anonym_players'] = [o.json() for o in anonym_players]
+            game_json['anonym_goalies'] = [o.json() for o in anonym_goalies]
+            game_json['anonym_referees'] = [o.json() for o in anonym_referees]
+        else:
+            game_json['organizers'] = [o.id for o in organizers]
+            game_json['players'] = [o.id for o in players]
+            game_json['anonym_players'] = [o.id for o in anonym_players]
+            game_json['goalies'] = [o.id for o in goalies]
+            game_json['anonym_goalies'] = [o.id for o in anonym_goalies]
+            game_json['referees'] = [o.id for o in referees]
+            game_json['anonym_referees'] = [o.id for o in anonym_referees]
+
+        return game_json
 
     @staticmethod
     def fetch_participant_role(game: GameModel, athlete_id: int):

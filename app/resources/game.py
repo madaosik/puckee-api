@@ -36,7 +36,7 @@ class Game(Resource):
         games_page, next_page_id, prev_page_id = GameHandler.fetch_page(page_id, int(page_info['per_page']))
         ret_dict = {'next_id': next_page_id, 'previous_id': prev_page_id, 'data': []}
         for game in games_page:
-            ret_dict['data'].append(GameHandler.json_full(game, att_details=True))
+            ret_dict['data'].append(GameHandler.json_full(game, {}, att_details=True))
         return ret_dict
 
     @staticmethod
@@ -71,23 +71,24 @@ class GameByDate(Resource):
 class GameUpdater(Game):
     @staticmethod
     # @jwt_required()
-    def get(event_id: int):
-        event = GameHandler.fetch_by_id(event_id)
-        return GameHandler.json_full(event, att_details=True)
+    def get(game_id: int):
+        data = request.args
+        game = GameHandler.fetch_by_id(game_id)
+        return GameHandler.json_full(game, data, att_details=True)
 
     @staticmethod
     # @jwt_required()
-    def delete(event_id: int):
-        return GameHandler.delete(event_id)
+    def delete(game_id: int):
+        return GameHandler.delete(game_id)
 
     @staticmethod
     # @jwt_required()
-    def put(event_id: int):
+    def put(game_id: int):
         data = Game.parser.parse_args()
-        return GameHandler.update(event_id, data)
+        return GameHandler.update(game_id, data)
 
 
 def configure(api):
     api.add_resource(Game, '/api/game')
     api.add_resource(GameByDate, '/api/game/date')
-    api.add_resource(GameUpdater, '/api/game/<event_id>')
+    api.add_resource(GameUpdater, '/api/game/<game_id>')

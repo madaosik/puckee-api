@@ -62,13 +62,32 @@ class AthleteHandler:
     def follow_status(follower_id, followee_id):
         """
         Checks if 'analyzed_id' follows 'requested_id'
-        @return boolean
+        @return FollowersModel
         """
         # Athlete I follow
         return FollowersModel.query\
             .filter(FollowersModel.follower.has(id=follower_id))\
             .filter(FollowersModel.followee.has(id=followee_id))\
             .first()
+
+    @staticmethod
+    def add_follow_status(athlete_json: dict, athlete_id, req_id):
+        """
+        Extends the provided 'athlete_json' with 'follow' key containing the information about the follow status of
+        'athlete_id' with regard to the 'req_id'
+        """
+        if req_id is None:
+            return athlete_json
+
+        follow_rel = AthleteHandler.follow_status(athlete_id, req_id)
+        if follow_rel:
+            athlete_json['follow'] = {'followed': True, 'opt_out_mode': follow_rel.opt_out_mode}
+        else:
+            athlete_json['follow'] = None
+
+        return athlete_json
+
+
 
     @staticmethod
     def add(data: dict):
@@ -132,12 +151,13 @@ class AthleteHandler:
         athlete_json['followers'] = len(athlete_followers)
         # [athlete_json['followers'].append(follower.from_id) for follower in athlete_followers]
 
-        if requesting_id:
-            follow_rel = AthleteHandler.follow_status(requesting_id, athlete.id)
-            if follow_rel:
-                athlete_json['follow'] = {'followed': True, 'opt_out_mode': follow_rel.opt_out_mode}
-            else:
-                athlete_json['follow'] = None
+        athlete_json = AthleteHandler.add_follow_status(athlete_json, athlete.id, requesting_id)
+        # if requesting_id:
+        #     follow_rel = AthleteHandler.follow_status(requesting_id, athlete.id)
+        #     if follow_rel:
+        #         athlete_json['follow'] = {'followed': True, 'opt_out_mode': follow_rel.opt_out_mode}
+        #     else:
+        #         athlete_json['follow'] = None
         return athlete_json
 
     @staticmethod
@@ -185,7 +205,7 @@ class AthleteHandler:
             athletes = AthleteModel.query\
                 .filter(AthleteModel.name.contains(data['name']), AthleteModel.roles.any(role_id=role_id)).all()
             ret_data = []
-            [ret_data.append(AthleteHandler.json_full(a)) for a in athletes]
+            [ret_data.append(AthleteHandler.json_full(a, requesting_id=data['requesting_id'])) for a in athletes]
             return ret_data
         else:
             return {

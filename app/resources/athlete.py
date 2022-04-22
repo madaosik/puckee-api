@@ -72,10 +72,10 @@ class AthleteFollowed(Resource):
 class AthleteSearch(Resource):
     @staticmethod
     def get():
+        """Requires 'name', 'role_id' and 'requesting_id' (to identify the follow relationship) request arguments"""
         data = request.args
-        if len(data) < 2:
+        if len(data) < 3:
             return {'message': 'Search parameters have not been provided!'}, 404
-
         return AthleteHandler.search(data)
 
 
