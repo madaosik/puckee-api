@@ -1,8 +1,8 @@
 """Basic DB scheme
 
-Revision ID: 3e329b93c88e
+Revision ID: 33cd5fb4a89a
 Revises: 
-Create Date: 2022-04-22 12:10:27.905920
+Create Date: 2022-04-29 12:15:40.489888
 
 """
 from alembic import op
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 # revision identifiers, used by Alembic.
 from app.core.model.seed import seed_data
 
-revision = '3e329b93c88e'
+revision = '33cd5fb4a89a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -63,12 +63,11 @@ def upgrade():
     sa.Column('exp_players_cnt', sa.Integer(), nullable=False),
     sa.Column('exp_goalies_cnt', sa.Integer(), nullable=False),
     sa.Column('exp_referees_cnt', sa.Integer(), nullable=False),
-    sa.Column('location_id', sa.Integer(), nullable=False),
+    sa.Column('location_id', sa.Integer(), nullable=True),
     sa.Column('est_price', sa.Integer(), nullable=False),
     sa.Column('remarks', sa.String(length=200), nullable=True),
-    sa.Column('date', sa.Date(), nullable=False),
-    sa.Column('start_time', sa.Time(), nullable=False),
-    sa.Column('end_time', sa.Time(), nullable=False),
+    sa.Column('start_time', sa.DateTime(), nullable=False),
+    sa.Column('end_time', sa.DateTime(), nullable=False),
     sa.Column('other_costs', sa.Integer(), nullable=False),
     sa.Column('is_private', sa.Boolean(), nullable=False),
     sa.Column('goalie_renum', sa.Integer(), nullable=False),

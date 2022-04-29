@@ -159,9 +159,9 @@ def seed_data():
             duration = timedelta(hours=1, minutes=30)
 
         end_datetime_rounded = start_datetime_rounded + duration
-        start_time = start_datetime_rounded.time()
-        end_time = end_datetime_rounded.time()
-        game_date = start_datetime_rounded.date()
+        start_time = start_datetime_rounded
+        end_time = end_datetime_rounded
+        # game_date = start_datetime_rounded.date()
 
 
         while True:
@@ -178,7 +178,7 @@ def seed_data():
                  'exp_referees_cnt': random.randrange(1, 3),
                  'referee_renum': random.choice([0, 50, 150, 200]),
                  'location_id': random.randrange(1, len(ice_rink_array) + 1),
-                 'date': game_date,
+                 # 'date': game_date,
                  'start_time': start_time,
                  'end_time': end_time,
                  'exp_skill': exp_skill,

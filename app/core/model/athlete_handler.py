@@ -1,13 +1,13 @@
 from flask_jwt_extended import create_access_token
 
-from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, FollowersModel
+from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, FollowersModel, \
+    AnonymousAthleteModel
 from app.core.db_base import session
 from sqlalchemy import exc as e
+from sqlalchemy.sql.expression import false, true
 from werkzeug.security import check_password_hash
 from datetime import datetime
 from flask import current_app as app
-
-
 import re
 
 
@@ -15,6 +15,28 @@ def validate_email(email: str):
     email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     return True if re.fullmatch(email_regex, email) else False
 
+
+class AnonymousAthleteHandler:
+    @staticmethod
+    def fetch(name: str, added_in: int, requesting_id: int):
+        """
+        Fetches an existing anonymous athlete based on his name or creates a new one if not exists
+        @param name: str
+        @param added_in: int ID of the game where the athlete is required
+        @param requesting_id: id
+        """
+        athlete = AnonymousAthleteModel.query.filter_by(name=name).first()
+        if athlete:
+            return athlete
+
+        athlete = AnonymousAthleteModel(name, added_in, requesting_id)
+        try:
+            session.add(athlete)
+            session.commit()
+        except e.SQLAlchemyError:
+            return {"message": "An internal error occurred during registration, please try again!"}, 500
+
+        return athlete
 
 class AthleteHandler:
     @staticmethod
@@ -29,6 +51,10 @@ class AthleteHandler:
             return AthleteModel.query.filter_by(email=kwargs.get('email')).first()
         else:
             raise ValueError("Unexpected argument has been provided to the fetch function - expected 'id' or 'login'")
+
+    @staticmethod
+    def fetch_anonymous(name: str):
+        return AnonymousAthleteModel.query.filter_by(name=name).first()
 
     @staticmethod
     def fetch_page(page_id: int, per_page: int):
@@ -51,12 +77,26 @@ class AthleteHandler:
         return AthleteRoleAssociationModel.query.filter(AthleteRoleAssociationModel.roles_assigned.has(id=athlete_id)).all()
 
     @staticmethod
-    def fetch_followers(athlete_id: int):
+    def fetch_followers(athlete_id: int, role_id=None, opt_out_mode=None):
         """
-        Fetches all followers of a given 'athlete_id'
+        Fetches all followers of a given 'athlete_id' - optionally restricted by the `role_id` and 'opt_out_mode' parameter.
+
+        @param athlete_id: ID of athlete for which the followers are being gathered
+        @param role_id: ID of the searched role
+        @param opt_out_mode: true for opt_out_mode == 'true', false otherwise
+
         @return [AthleteModel]
         """
-        return FollowersModel.query.filter(FollowersModel.followee.has(id=athlete_id)).all()
+        if not role_id:
+            return FollowersModel.query.filter(FollowersModel.followee.has(id=athlete_id)).all()
+
+        if opt_out_mode:
+            return FollowersModel.query.filter(FollowersModel.followee.has(id=athlete_id),
+                                               FollowersModel.follower.has(AthleteModel.roles.any(role_id=role_id)),
+                                               FollowersModel.opt_out_mode == opt_out_mode).all()
+        else:
+            return FollowersModel.query.filter(FollowersModel.followee.has(id=athlete_id),
+                                               AthleteModel.roles.any(role_id=role_id)).all()
 
     @staticmethod
     def follow_status(follower_id, followee_id):
@@ -71,7 +111,7 @@ class AthleteHandler:
             .first()
 
     @staticmethod
-    def add_follow_status(athlete_json: dict, athlete_id, req_id):
+    def add_follow_status(athlete_json: dict, athlete_id: int, req_id: int):
         """
         Extends the provided 'athlete_json' with 'follow' key containing the information about the follow status of
         'athlete_id' with regard to the 'req_id'
@@ -200,16 +240,30 @@ class AthleteHandler:
 
     @staticmethod
     def search(data: dict):
-        if data['name']:
-            role_id = int(data['role_id'])
+        athletes = None
+        if 'role_id' in data:
             athletes = AthleteModel.query\
-                .filter(AthleteModel.name.contains(data['name']), AthleteModel.roles.any(role_id=role_id)).all()
-            ret_data = []
-            [ret_data.append(AthleteHandler.json_full(a, requesting_id=data['requesting_id'])) for a in athletes]
-            return ret_data
+                .filter(AthleteModel.name.contains(data['name']), AthleteModel.roles.any(role_id=int(data['role_id'])))\
+                .all()
         else:
-            return {
-                'message': 'Unexpected GET search parameter!'
-            }, 400
+            athletes = AthleteModel.query\
+                .filter(AthleteModel.name.contains(data['name']))\
+                .all()
+        ret_data = []
+        [ret_data.append(AthleteHandler.json_full(a, requesting_id=data['requesting_id'])) for a in athletes]
+        return ret_data
+
+    @staticmethod
+    def search_followers(data: dict):
+        follow_relationships = AthleteHandler.fetch_followers(data['requesting_id'],
+                                                              role_id=data['role_id'],
+                                                              opt_out_mode=data['opt_out_mode'])
+        followers = []
+        for relationship in follow_relationships:
+            follower_json = relationship.follower.json()
+            follower_json['follow'] = {'followed': True, 'opt_out_mode': relationship.opt_out_mode}
+            followers.append(follower_json)
+        # follower_json = [AthleteHandler.json_full relationship.follower.json()
+        return followers
 
 

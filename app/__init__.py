@@ -6,7 +6,6 @@ from app.core.db_base import configure_db
 from app.core.config import DB_URI, SECRET_KEY
 from flask_jwt_extended import JWTManager
 
-
 def create_app():
     app = Flask(__name__, static_url_path='/static', static_folder='./static')
     CORS(app, resources={r"/api/*": {"origins": "*"}})

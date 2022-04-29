@@ -1,11 +1,14 @@
 from app.core.model.athlete_handler import AthleteHandler
+from app.core.model.icerink_handler import IceRinkHandler
+
 from app.core.model.attendance_handler import PlayersInGame, GoaliesInGame, RefereesInGame, OrganizersInGame, \
     AthleteRole, AnonymPlayersInGame, AnonymGoaliesInGame, AnonymRefereesInGame
-from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT
+from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT, \
+    AnonymousAthleteModel, DATETIME_FORMAT
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from sqlalchemy import asc
-from datetime import datetime
+from datetime import datetime, time, date
 
 
 class GameHandler:
@@ -19,7 +22,7 @@ class GameHandler:
 
     @staticmethod
     def fetch_page(page_id: int, per_page: int):
-        games_page = GameModel.query.order_by(asc(GameModel.date)).paginate(page_id, per_page, error_out=False).items
+        games_page = GameModel.query.order_by(asc(GameModel.start_time)).paginate(page_id, per_page, error_out=False).items
         next_page_id = None if len(games_page) < per_page else page_id + 1
         prev_page_id = None if page_id == 1 else page_id - 1
         return games_page, next_page_id, prev_page_id
@@ -50,14 +53,14 @@ class GameHandler:
             .order_by(asc(GameModel.start))
 
     @staticmethod
-    def add(organizer: AthleteModel, data: dict):
+    def add(data: dict):
+        # try:
         game = GameModel(name=data['name'],
                          exp_players_cnt=data['exp_players_cnt'],
                          exp_goalies_cnt=data['exp_goalies_cnt'],
                          exp_referees_cnt=data['exp_referees_cnt'],
-                         start_time=datetime.strptime(data['start_time'], TIME_FORMAT),
-                         end_time=datetime.strptime(data['end_time'], TIME_FORMAT),
-                         date=datetime.strptime(data['end_time'], DATE_FORMAT),
+                         start_time=datetime.strptime(data['start_time'], DATETIME_FORMAT),
+                         end_time=datetime.strptime(data['end_time'], DATETIME_FORMAT),
                          est_price=data['est_price'],
                          remarks=data['remarks'],
                          other_costs=data['other_costs'],
@@ -66,14 +69,45 @@ class GameHandler:
                          referee_renum=data['referee_renum'],
                          exp_skill=data['exp_skill'],
                          )
-        game.location = IceRinkModel.query.filter_by(id=data['location'])
-        game.organizers.append(organizer)
+        game.location = IceRinkHandler.fetch(id=data['location_id'])
+
         try:
             session.add(game)
-            session.commit()
+            session.flush()
         except e.SQLAlchemyError:
             return {"message": "An error occurred creating the event."}, 500
-        return GameHandler.json_full(game, att_details=True), 201
+
+        [game.organizers.append(AthleteHandler.fetch(id=pid)) for pid in data['organizers']]
+        if data['players']:
+            [game.players.append(AthleteHandler.fetch(id=pid)) for pid in data['players']]
+        if data['goalies']:
+            [game.goalies.append(AthleteHandler.fetch(id=pid)) for pid in data['goalies']]
+        if data['referees']:
+            [game.referees.append(AthleteHandler.fetch(id=pid)) for pid in data['referees']]
+
+        if data['anonym_players']:
+            for anonym_player in data['anonym_players']:
+                if AthleteHandler.fetch_anonymous(anonym_player):
+                    continue
+                new_anonym_player = AnonymousAthleteModel(anonym_player, data['organizers'][0], game.id)
+                game.anonym_players.append(new_anonym_player)
+
+        if data['anonym_goalies']:
+            for anonym_goalie in data['anonym_goalies']:
+                if AthleteHandler.fetch_anonymous(anonym_goalie):
+                    continue
+                new_anonym_goalie = AnonymousAthleteModel(anonym_goalie, data['organizers'][0], game.id)
+                game.anonym_players.append(new_anonym_goalie)
+
+        if data['anonym_referees']:
+            for anonym_referee in data['anonym_referees']:
+                if AthleteHandler.fetch_anonymous(anonym_referee):
+                    continue
+                new_anonym_referee = AnonymousAthleteModel(anonym_referee, data['organizers'][0], game.id)
+                game.anonym_players.append(new_anonym_referee)
+
+        session.commit()
+        return GameHandler.json_full(game, {'requesting_id': data['organizers'][0]}, att_details=True), 201
 
     @staticmethod
     def delete(game_id: int):
@@ -83,26 +117,31 @@ class GameHandler:
         return {'message': 'Event has been deleted'}, 204
 
     @staticmethod
-    def update(game_id: int, data: dict):
-        game = GameHandler.fetch_by_id(game_id)
+    def update(data: dict):
+        game = GameHandler.fetch_by_id(data['id'])
         game.name = data['name']
         game.exp_players_cnt = data['exp_players_cnt']
         game.exp_goalies_cnt = data['exp_goalies_cnt']
         game.exp_referees_cnt = data['exp_referees_cnt']
         game.est_price = data['est_price']
         game.remarks = data['remarks']
-        game.date = datetime.strptime(data['start'], DATE_FORMAT)
-        game.start_time = datetime.strptime(data['start_time'], TIME_FORMAT)
-        game.end_time = datetime.strptime(data['end_time'], TIME_FORMAT)
+        # game.date = datetime.strptime(data['date'], DATE_FORMAT)
+        game.start_time = datetime.strptime(data['start_time'], DATETIME_FORMAT)
+        game.end_time = datetime.strptime(data['end_time'], DATETIME_FORMAT)
         game.other_costs = data['other_costs']
         game.is_private = data['is_private']
         game.goalie_renum = data['goalie_renum']
         game.referee_renum = data['referee_renum']
         game.exp_skill = data['exp_skill']
-        # handle loc
 
-        session.commit()
-        return GameHandler.json_full(game)
+        new_location_id = data['location_id']
+        if new_location_id != game.location_id:
+            game.location = IceRinkHandler.fetch(id=data['location_id'])
+        try:
+            session.commit()
+        except e.SQLAlchemyError:
+            return {"message": "An error occurred updating the event."}, 500
+        return GameHandler.json_full(game, {})
 
     @staticmethod
     def json_full(game: GameModel, req_args: dict, att_details=False):
@@ -161,47 +200,82 @@ class GameHandler:
         return game_json
 
     @staticmethod
-    def fetch_participant_role(game: GameModel, athlete_id: int):
+    def fetch_participant_role(game: GameModel, data: dict):
         """
         Returns participant's role in a given game (either player OR goalie OR referee)
         @return AthleteRole
         """
-        for goalie in game.goalies:
-            if goalie.id == athlete_id:
-                return AthleteRole.GOALIE
-        for referee in game.referees:
-            if referee.id == athlete_id:
-                return AthleteRole.REFEREE
-        for player in game.players:
-            if player.id == athlete_id:
-                return AthleteRole.PLAYER
-        return None
+        if 'athlete_id' in data:
+            id = int(data['athlete_id'])
+            for goalie in game.goalies:
+                if goalie.id == id:
+                    return AthleteRole.GOALIE
+            for referee in game.referees:
+                if referee.id == id:
+                    return AthleteRole.REFEREE
+            for player in game.players:
+                if player.id == id:
+                    return AthleteRole.PLAYER
+            return None
+        else:
+            for goalie in game.anonym_goalies:
+                if goalie.name == data['athlete_name']:
+                    return AthleteRole.GOALIE
+            for referee in game.anonym_referees:
+                if referee.name == data['athlete_name']:
+                    return AthleteRole.REFEREE
+            for player in game.anonym_players:
+                if player.name == data['athlete_name']:
+                    return AthleteRole.PLAYER
+            return None
 
     @staticmethod
     def add_participant(game_id: int, data: dict):
         game = GameHandler.fetch_by_id(game_id)
         role_ind = int(data['athlete_role'])
         if role_ind == AthleteRole.PLAYER:
-            return GameHandler.players.add(game, data['athlete_id'])
+            if data['athlete_id']:
+                return GameHandler.players.add(game, data['athlete_id'])
+            else:
+                return GameHandler.anonym_players.add(game, data)
         elif role_ind == AthleteRole.GOALIE:
-            return GameHandler.goalies.add(game, data['athlete_id'])
+            if data['athlete_id']:
+                return GameHandler.goalies.add(game, data['athlete_id'])
+            else:
+                return GameHandler.anonym_goalies.add(game, data)
         elif role_ind == AthleteRole.REFEREE:
-            return GameHandler.referees.add(game, data['athlete_id'])
+            if data['athlete_id']:
+                return GameHandler.referees.add(game, data['athlete_id'])
+            else:
+                return GameHandler.anonym_referees.add(game, data)
         else:
             return 'Unknown athlete role has been provided: \'{}\''.format(data['athlete_role']), 404
 
     @staticmethod
-    def delete_participant(game_id: int, athlete_id: int):
+    def delete_participant(game_id: int, data: dict):
         game = GameHandler.fetch_by_id(game_id)
-        role = GameHandler.fetch_participant_role(game, athlete_id)
+        role = GameHandler.fetch_participant_role(game, data)
         if not role:
-            return {'message': "Athlete_id " + str(athlete_id) + "does not participate in " + str(game.id) + "!"}, 404
+            if 'athlete_id' in data:
+                return {'message': "Athlete '" + data['athlete_id'] + "' does not participate in " + str(game.id) + "!"}, 404
+            else:
+                return {'message': "Athlete '" + data['athlete_name'] + "' does not participate in " + str(game.id) + "!"}, 404
+
         if role == AthleteRole.PLAYER:
-            return GameHandler.players.delete(game, athlete_id)
+            if 'athlete_id' in data:
+                return GameHandler.players.delete(game, data['athlete_id'])
+            else:
+                return GameHandler.anonym_players.delete(game, data['athlete_name'])
         elif role == AthleteRole.GOALIE:
-            return GameHandler.goalies.delete(game, athlete_id)
+            if 'athlete_id' in data:
+                return GameHandler.goalies.delete(game, data['athlete_id'])
+            else:
+                return GameHandler.anonym_goalies.delete(game, data['athlete_name'])
         elif role == AthleteRole.REFEREE:
-            return GameHandler.referees.delete(game, athlete_id)
+            if 'athlete_id' in data:
+                return GameHandler.referees.delete(game, data['athlete_id'])
+            else:
+                return GameHandler.anonym_referees.delete(game, data['athlete_name'])
 
     @staticmethod
     def add_organizer(game_id: int, athlete_id: int):

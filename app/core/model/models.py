@@ -59,14 +59,16 @@ class GameModel(sqlDb.Model):
     exp_players_cnt = Column(Integer, nullable=False)
     exp_goalies_cnt = Column(Integer, nullable=False)
     exp_referees_cnt = Column(Integer, nullable=False)
-    location_id = Column(Integer, ForeignKey('icerink.id'), nullable=False)
+    # child = sqlDb.relationship("IceRinkModel", back_populates="parent", uselist=False)
+    location_id = Column(Integer, ForeignKey('icerink.id'))
+    location = sqlDb.relationship("IceRinkModel", back_populates="games")
     # location = sqlDb.relationship("IceRinkModel", back_populates="games")
     # location = sqlDb.relationship("IceRinkModel", backref=sqlDb.backref('athlete', uselist=False))
     est_price = Column(Integer, nullable=False)
     remarks = Column(String(200), nullable=True)
-    date = Column(Date, nullable=False)
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
+    # date = Column(Date, nullable=False)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
     other_costs = Column(Integer, nullable=False)
     is_private = Column(Boolean, default=False, nullable=False)
     goalie_renum = Column(Integer, nullable=False)
@@ -103,9 +105,9 @@ class GameModel(sqlDb.Model):
                 "location_id": self.location_id,
                 "est_price": self.est_price,
                 "remarks": self.remarks,
-                "date":  date.strftime(self.date, DATE_FORMAT),
-                "start_time": time.strftime(self.start_time, TIME_FORMAT),
-                "end_time": time.strftime(self.end_time, TIME_FORMAT),
+                # "date":  datetime.strftime(self.date, DATE_FORMAT),
+                "start_time": datetime.strftime(self.start_time, DATETIME_FORMAT),
+                "end_time": datetime.strftime(self.end_time, DATETIME_FORMAT),
                 "other_costs": self.other_costs,
                 "is_private": self.is_private,
                 "goalie_renum": self.goalie_renum,
@@ -129,6 +131,11 @@ class AnonymousAthleteModel(sqlDb.Model):
     added_by = Column(Integer, ForeignKey('athlete.id'), nullable=False)
     added_in = Column(Integer, ForeignKey('game.id'), nullable=False)
     created = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
+
+    def __init__(self, name, added_by, added_in):
+        self.name = name
+        self.added_by = added_by
+        self.added_in = added_in
 
     def json(self):
         creation_time_formatted = self.created.isoformat()
@@ -195,7 +202,7 @@ class IceRinkModel(sqlDb.Model):
     name = Column(String(50), nullable=False)
     address = Column(String(40))
     price_per_hour = Column(Integer)
-    games = sqlDb.relationship("GameModel", backref='location', lazy=True)
+    games = sqlDb.relationship("GameModel", back_populates="location")
 
     def json(self):
         return {

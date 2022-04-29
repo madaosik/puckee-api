@@ -72,14 +72,40 @@ class AthleteFollowed(Resource):
 class AthleteSearch(Resource):
     @staticmethod
     def get():
-        """Requires 'name', 'role_id' and 'requesting_id' (to identify the follow relationship) request arguments"""
+        """
+        Requires 'name', 'role_id' and 'requesting_id' (to identify the follow relationship) request arguments
+        Additional parameters can be 'followee_id', 'opt_out_mode'
+        """
         data = request.args
-        if len(data) < 3:
-            return {'message': 'Search parameters have not been provided!'}, 404
-        return AthleteHandler.search(data)
+        if 'name' not in data:
+            return {'message': 'Search parameter \'name\' has not been provided!'}, 400
 
+        # 'requesting_id' searches for athletes that follow 'requesting_id', i.e. by whom is 'requesting_id' being
+        # followed
+        if 'followers_only' not in data:
+            return AthleteHandler.search(data)
+
+        # 'requesting_id' requests all athletes and wants to know who follows him and who does not
+        if 'opt_out_mode' not in data:
+            return {'message': 'Following mode parameter \'opt_out_mode\' has not been provided!'}, 400
+
+        return AthleteHandler.search_followers(data)
+
+
+# class AthleteOptOutModeSearch(Resource):
+#     """Searching for only athletes in opt-out follow relationship with the requesting ID"""
+#     @staticmethod
+#     def get(followee_id: int):
+#         """"Requires 'requesting_id' and 'role_id' GET parameters"""
+#         data = request.args
+#         if len(data) < 2:
+#             return {'message': 'Search parameters \'requesting_id\' and \'role_id\' have not been provided!'}, 404
+#
+#
+#
 
 def configure(api):
     api.add_resource(Athlete, '/api/athlete')
     api.add_resource(AthleteSearch, '/api/athlete/search')
     api.add_resource(AthleteFollowed, '/api/athlete/<follower_id>/follow/<followee_id>')
+    # api.add_resource(AthleteOptOutModeSearch, '/api/athlete/<followee_id>/search')

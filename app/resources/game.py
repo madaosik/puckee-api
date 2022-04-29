@@ -9,18 +9,51 @@ from app.resources.utils import check_paging_params
 
 class Game(Resource):
     parser = reqparse.RequestParser()
+    parser.add_argument('id', type=int, required=False)
     parser.add_argument('name', type=str, required=True,
                         help='Provide name of the event in \'name\'')
-    parser.add_argument('organizer_id', type=int, required=True,
-                        help='Provide id of the organizer in \'organizer_id\'')
-    parser.add_argument('total_places', type=int, required=True,
-                        help='Total count of places has to be provided')
-    parser.add_argument('start', type=str, required=True,
-                        help='Provide start time in \'start\'')
-    parser.add_argument('duration', type=str, required=True,
-                        help='Provide duration time in \'duration\'')
-    parser.add_argument('exp_level', type=int, required=True,
-                        help='Provide expected level of game in \'exp_level\'')
+    parser.add_argument('exp_players_cnt', type=int, required=True,
+                        help='Provide the expected count of players in \'exp_players_cnt\'')
+    parser.add_argument('exp_goalies_cnt', type=int, required=True,
+                        help='Provide the expected count of goalies in \'exp_goalies_cnt\'')
+    parser.add_argument('exp_referees_cnt', type=int, required=True,
+                        help='Provide the expected count of referees in \'exp_referees_cnt\'')
+    parser.add_argument('location_id', type=int, required=True,
+                        help='Provide the expected location id in \'location_id\'')
+    parser.add_argument('est_price', type=int, required=True,
+                        help='Provide the expected price for players in \'est_price\'')
+    parser.add_argument('remarks', type=str, required=True,
+                        help='Provide remarks in \'remarks\'')
+    parser.add_argument('start_time', type=str, required=True,
+                        help='Provide start_time in \'start_time\'')
+    parser.add_argument('end_time', type=str, required=True,
+                        help='Provide end_time in \'end_time\'')
+    parser.add_argument('other_costs', type=int, required=True,
+                        help='Provide the other_costs in \'other_costs\'')
+    parser.add_argument('is_private', type=int, required=False,
+                        help='Provide private flag value in \'is_private\'')
+    parser.add_argument('goalie_renum', type=int, required=True,
+                        help='Provide the goalie_renum in \'goalie_renum\'')
+    parser.add_argument('referee_renum', type=int, required=True,
+                        help='Provide the referee_renum in \'referee_renum\'')
+    parser.add_argument('est_price', type=int, required=True,
+                        help='Provide the expected price for players in \'est_price\'')
+    parser.add_argument('players', type=int, action='append', required=False,
+                        help='Provide the list of signed up player IDs in \'players\'')
+    parser.add_argument('organizers', type=int, action='append', required=False,
+                        help='Provide the list of signed up organizers IDs in \'organizers\'')
+    parser.add_argument('goalies', type=int, action='append', required=False,
+                        help='Provide the list of signed up goalies IDs in \'goalies\'')
+    parser.add_argument('referees', type=int, action='append', required=False,
+                        help='Provide the list of signed up referees IDs in \'referees\'')
+    parser.add_argument('anonym_players', type=str, action='append', required=False,
+                        help='Provide the list of anonym_players in \'anonym_players\'')
+    parser.add_argument('anonym_goalies', type=str, action='append', required=False,
+                        help='Provide the list of anonym_goalies in \'anonym_goalies\'')
+    parser.add_argument('anonym_referees', type=str, action='append', required=False,
+                        help='Provide the list of sanonym_referees in \'anonym_referees\'')
+    parser.add_argument('exp_skill', type=int, required=True,
+                        help='Provide expected skill of the game in \'exp_skill\'')
 
     @staticmethod
     # @jwt_required()
@@ -44,8 +77,15 @@ class Game(Resource):
     def post():
         app.logger.info(f'parsed args: {Game.parser.parse_args()}')
         data = Game.parser.parse_args()
-        organizer = AthleteHandler.fetch(id=data['organizer_id'])
-        return GameHandler.add(organizer, data)
+        # organizer = AthleteHandler.fetch(id=data['organizer_id'])
+        return GameHandler.add(data)
+
+    @staticmethod
+    def put():
+        app.logger.info(f'parsed args: {Game.parser.parse_args()}')
+        data = Game.parser.parse_args()
+        # organizer = AthleteHandler.fetch(id=data['organizer_id'])
+        return GameHandler.update(data)
 
 
 class GameByDate(Resource):
@@ -73,8 +113,14 @@ class GameUpdater(Game):
     # @jwt_required()
     def get(game_id: int):
         data = request.args
+        if 'attendance' not in data:
+            app.logger.error('\'attendance\' has not been provided as GET parameter for /api/event/date')
+            return {'message': '\'attendance\' has not been provided as GET parameter for /api/event/date'}, 400
         game = GameHandler.fetch_by_id(game_id)
-        return GameHandler.json_full(game, data, att_details=True)
+        if data['attendance'] == 'true':
+            return GameHandler.json_full(game, data, att_details=True)
+        else:
+            return game.json(), 200
 
     @staticmethod
     # @jwt_required()
