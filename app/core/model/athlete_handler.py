@@ -111,22 +111,21 @@ class AthleteHandler:
             .first()
 
     @staticmethod
-    def add_follow_status(athlete_json: dict, athlete_id: int, req_id: int):
+    def add_follower_status(athlete_json: dict, follower_id: int, followee_id: int):
         """
         Extends the provided 'athlete_json' with 'follow' key containing the information about the follow status of
         'athlete_id' with regard to the 'req_id'
+        @param athlete_json: dict - Athlete JSON to be extended
+        @param follower_id: int - ID of the person who follows the followee
+        @param followee_id: int - ID of the person potentially being followed
         """
-        if req_id is None:
-            return athlete_json
-
-        follow_rel = AthleteHandler.follow_status(athlete_id, req_id)
+        follow_rel = AthleteHandler.follow_status(follower_id, followee_id)
         if follow_rel:
             athlete_json['follow'] = {'followed': True, 'opt_out_mode': follow_rel.opt_out_mode}
         else:
             athlete_json['follow'] = None
 
         return athlete_json
-
 
 
     @staticmethod
@@ -191,7 +190,7 @@ class AthleteHandler:
         athlete_json['followers'] = len(athlete_followers)
         # [athlete_json['followers'].append(follower.from_id) for follower in athlete_followers]
 
-        athlete_json = AthleteHandler.add_follow_status(athlete_json, athlete.id, requesting_id)
+        athlete_json = AthleteHandler.add_follower_status(athlete_json, athlete.id, requesting_id)
         # if requesting_id:
         #     follow_rel = AthleteHandler.follow_status(requesting_id, athlete.id)
         #     if follow_rel:

@@ -164,25 +164,25 @@ class GameHandler:
             game_json['organizers'] = []
             for o in organizers:
                 o_json = o.json()
-                o_json = AthleteHandler.add_follow_status(o_json, o.id, req_id)
+                o_json = AthleteHandler.add_follower_status(o_json, req_id, o.id)
                 game_json['organizers'].append(o_json)
 
             game_json['players'] = []
             for p in players:
                 p_json = p.json()
-                p_json = AthleteHandler.add_follow_status(p_json, p.id, req_id)
+                p_json = AthleteHandler.add_follower_status(p_json, req_id, p.id)
                 game_json['players'].append(p_json)
 
             game_json['goalies'] = []
             for g in goalies:
                 g_json = g.json()
-                g_json = AthleteHandler.add_follow_status(g_json, g.id, req_id)
+                g_json = AthleteHandler.add_follower_status(g_json, req_id, g.id)
                 game_json['goalies'].append(g_json)
 
             game_json['referees'] = []
             for r in referees:
                 r_json = r.json()
-                r_json = AthleteHandler.add_follow_status(r_json, r.id, req_id)
+                r_json = AthleteHandler.add_follower_status(r_json, req_id, r.id)
                 game_json['referees'].append(r_json)
 
             game_json['anonym_players'] = [o.json() for o in anonym_players]
