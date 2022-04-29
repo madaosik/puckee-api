@@ -7,7 +7,7 @@ from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FO
     AnonymousAthleteModel, DATETIME_FORMAT
 from app.core.db_base import session
 from sqlalchemy import exc as e
-from sqlalchemy import asc
+from sqlalchemy import asc, or_
 from datetime import datetime, time, date
 
 
@@ -22,14 +22,15 @@ class GameHandler:
 
     @staticmethod
     def fetch_page(page_id: int, per_page: int):
-        games_page = GameModel.query.order_by(asc(GameModel.start_time)).paginate(page_id, per_page, error_out=False).items
+        games_page = GameModel.query.order_by(asc(GameModel.start_time)).paginate(page_id, per_page,
+                                                                                  error_out=False).items
         next_page_id = None if len(games_page) < per_page else page_id + 1
         prev_page_id = None if page_id == 1 else page_id - 1
         return games_page, next_page_id, prev_page_id
 
     @staticmethod
     def fetch_by_id(game_id: int):
-        return GameModel.query.filter_by(id=game_id)\
+        return GameModel.query.filter_by(id=game_id) \
             .first_or_404(description='Event with id {} is not available'.format(game_id))
 
     @staticmethod
@@ -48,9 +49,24 @@ class GameHandler:
         except ValueError:
             raise ValueError('Unexpected date format for \'end_date\', expected \'YYYY-MM-DD\'')
 
-        return GameModel.query.filter(GameModel.start <= end_timestamp)\
-            .filter(GameModel.start >= start_timestamp)\
+        return GameModel.query.filter(GameModel.start <= end_timestamp) \
+            .filter(GameModel.start >= start_timestamp) \
             .order_by(asc(GameModel.start))
+
+    @staticmethod
+    def fetch_by_attendee_id(athlete_id: int, game_limit=None):
+        # TODO Optimize the db search by searching only for relevant roles
+        if game_limit:
+            games = GameModel.query.filter(or_(GameModel.players.any(id=athlete_id),
+                                               GameModel.goalies.any(id=athlete_id),
+                                               GameModel.referees.any(id=athlete_id))) \
+                .order_by(asc(GameModel.start_time)).limit(game_limit).all()
+        else:
+            games = GameModel.query.filter(or_(GameModel.players.any(id=athlete_id),
+                                               GameModel.goalies.any(id=athlete_id),
+                                               GameModel.referees.any(id=athlete_id))) \
+                .order_by(asc(GameModel.start_time)).all()
+        return [GameHandler.json_full(g, {}, att_details=True) for g in games]
 
     @staticmethod
     def add(data: dict):
@@ -150,8 +166,8 @@ class GameHandler:
             req_id = req_args['requesting_id']
 
         game_json = game.json()
-        organizers = AthleteModel.query\
-            .filter(AthleteModel.games_organized.any(id=game.id))\
+        organizers = AthleteModel.query \
+            .filter(AthleteModel.games_organized.any(id=game.id)) \
             .all()
         players = GameHandler.players.fetch_all(game.id)
         anonym_players = GameHandler.anonym_players.fetch_all(game.id)
@@ -257,9 +273,11 @@ class GameHandler:
         role = GameHandler.fetch_participant_role(game, data)
         if not role:
             if 'athlete_id' in data:
-                return {'message': "Athlete '" + data['athlete_id'] + "' does not participate in " + str(game.id) + "!"}, 404
+                return {'message': "Athlete '" + data['athlete_id'] + "' does not participate in " + str(
+                    game.id) + "!"}, 404
             else:
-                return {'message': "Athlete '" + data['athlete_name'] + "' does not participate in " + str(game.id) + "!"}, 404
+                return {'message': "Athlete '" + data['athlete_name'] + "' does not participate in " + str(
+                    game.id) + "!"}, 404
 
         if role == AthleteRole.PLAYER:
             if 'athlete_id' in data:
