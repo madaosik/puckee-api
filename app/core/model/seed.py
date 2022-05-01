@@ -3,11 +3,10 @@ from alembic import op
 from werkzeug.security import generate_password_hash
 import random
 from datetime import datetime, timedelta
-from app.core.model.attendance_handler import AthleteRole
 from app.core.model.models import GAME_NAME_LEN_LIMIT, \
     AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, GameModel, IceRinkModel, \
     game_players, game_anonym_players, game_organizers, game_goalies, game_anonym_goalies, game_referees, \
-    game_anonym_referees, FollowersModel, AnonymousAthleteModel
+    game_anonym_referees, FollowersModel, AnonymousAthleteModel, AthleteRole
 
 GAMES_CNT = 300
 ATHLETES_CNT = 400

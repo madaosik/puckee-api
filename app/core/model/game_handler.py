@@ -2,9 +2,9 @@ from app.core.model.athlete_handler import AthleteHandler
 from app.core.model.icerink_handler import IceRinkHandler
 
 from app.core.model.attendance_handler import PlayersInGame, GoaliesInGame, RefereesInGame, OrganizersInGame, \
-    AthleteRole, AnonymPlayersInGame, AnonymGoaliesInGame, AnonymRefereesInGame
+    AnonymPlayersInGame, AnonymGoaliesInGame, AnonymRefereesInGame
 from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT, \
-    AnonymousAthleteModel, DATETIME_FORMAT, FollowersModel
+    AnonymousAthleteModel, DATETIME_FORMAT, FollowersModel, AthleteRole
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from sqlalchemy import asc, or_, and_, not_

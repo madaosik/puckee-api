@@ -1,16 +1,6 @@
-from enum import IntEnum
-
-from app.core.model.models import AthleteModel, GameModel, AnonymousAthleteModel
+from app.core.model.models import AthleteModel, GameModel, AnonymousAthleteModel, AthleteRole
 from app.core.db_base import session
 from app.core.model.athlete_handler import AnonymousAthleteHandler
-
-
-class AthleteRole(IntEnum):
-    USER = 1
-    PLAYER = 2
-    GOALIE = 3
-    REFEREE = 4
-    ORGANIZER = 5
 
 
 class PlayersInGame:

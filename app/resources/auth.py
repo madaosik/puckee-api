@@ -9,15 +9,12 @@ from app.core.model import AthleteHandler
 
 class AthleteSignUp(Resource):
     parser = reqparse.RequestParser()
-    # parser.add_argument('login', type=str, required=True,
-    #                     help='Athlete login')
     parser.add_argument('password', type=str, required=True,
                         help='Athlete password provided in string')
-    # parser.add_argument('name', type=str, required=True,
-    #                     help='Please provide athlete name')
     parser.add_argument('email', type=str, required=True,
                         help='Please provide athlete email')
-    # parser.add_argument('roles')
+    # parser.add_argument('roles', type=int, action='append', required=True,
+    #                     help='Please provide roles in \'roles\'!')
 
     @staticmethod
     def post():

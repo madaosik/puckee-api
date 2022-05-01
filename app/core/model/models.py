@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, TIMESTAMP, func, ForeignKey, Float
 from sqlalchemy.types import DateTime, Time, Date, Boolean
@@ -227,5 +229,14 @@ class AthleteRoleAssociationModel(sqlDb.Model):
     role_id = Column(ForeignKey('athlete_role.id'), primary_key=True)
     skill_level = Column(Float)
 
+    def __init__(self, role_id, skill_level=0):
+        self.role_id = role_id
+        self.skill_level = skill_level
 
 
+class AthleteRole(IntEnum):
+    USER = 1
+    PLAYER = 2
+    GOALIE = 3
+    REFEREE = 4
+    ORGANIZER = 5

@@ -1,10 +1,10 @@
 from flask_jwt_extended import create_access_token
 
+# from app.core.model.attendance_handler import AthleteRole
 from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, FollowersModel, \
-    AnonymousAthleteModel
+    AnonymousAthleteModel, AthleteRole
 from app.core.db_base import session
 from sqlalchemy import exc as e
-from sqlalchemy.sql.expression import false, true
 from werkzeug.security import check_password_hash
 from datetime import datetime
 from flask import current_app as app
@@ -146,8 +146,8 @@ class AthleteHandler:
             return {"message": error_text}, 400
 
         # Every registered athlete is a user
-        # user_role = AthleteRoleModel.query.filter_by(id=1).first()
-        # athlete.roles.append(user_role)
+        role_assoc = AthleteRoleAssociationModel(int(AthleteRole.USER))
+        athlete.roles.append(role_assoc)
         # for role_id in data['roles']:
         #     role = AthleteRoleModel.query.filter_by(id=role_id) \
         #         .first_or_404(description='Role with id={} is not available'.format(role_id))
@@ -163,7 +163,6 @@ class AthleteHandler:
             'access_token': create_access_token(identity=data['email']),
             'athlete': AthleteHandler.json_full(athlete)
         }
-        # return AthleteHandler.json_full(athlete), 201
 
     @staticmethod
     def delete(athlete_id: int):
