@@ -4,10 +4,10 @@ from app.core.model.icerink_handler import IceRinkHandler
 from app.core.model.attendance_handler import PlayersInGame, GoaliesInGame, RefereesInGame, OrganizersInGame, \
     AthleteRole, AnonymPlayersInGame, AnonymGoaliesInGame, AnonymRefereesInGame
 from app.core.model.models import GameModel, AthleteModel, IceRinkModel, TIME_FORMAT, DATE_FORMAT, \
-    AnonymousAthleteModel, DATETIME_FORMAT
+    AnonymousAthleteModel, DATETIME_FORMAT, FollowersModel
 from app.core.db_base import session
 from sqlalchemy import exc as e
-from sqlalchemy import asc, or_
+from sqlalchemy import asc, or_, and_, not_
 from datetime import datetime, time, date
 
 
@@ -67,6 +67,38 @@ class GameHandler:
                                                GameModel.referees.any(id=athlete_id))) \
                 .order_by(asc(GameModel.start_time)).all()
         return [GameHandler.json_full(g, {}, att_details=True) for g in games]
+
+    @staticmethod
+    def fetch_followee_games(athlete_id: int, game_limit=None):
+        """
+        Inspired by https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-viii-followers
+        """
+        record_lim = 5
+        if game_limit:
+            record_lim = game_limit
+
+        followed_games = GameModel.query.join(FollowersModel,
+                            and_(or_(GameModel.organizers.any(id=FollowersModel.to_id),
+                                     GameModel.players.any(id=FollowersModel.to_id),
+                                     GameModel.goalies.any(id=FollowersModel.to_id),
+                                     GameModel.referees.any(id=FollowersModel.to_id)),
+                                 and_(not_(GameModel.organizers.any(id=athlete_id)),
+                                      not_(GameModel.players.any(id=athlete_id)),
+                                      not_(GameModel.goalies.any(id=athlete_id)),
+                                      not_(GameModel.referees.any(id=athlete_id)))
+                                 )
+                          ).filter(FollowersModel.from_id == athlete_id)\
+                            .order_by(asc(GameModel.start_time)).limit(record_lim).all()
+
+        followed_games.sort(key=lambda x:
+                            sum([AthleteHandler.follow_status(athlete_id, p.id) is not None for p in x.organizers]) +
+                            sum([AthleteHandler.follow_status(athlete_id, p.id) is not None for p in x.players]) +
+                            sum([AthleteHandler.follow_status(athlete_id, p.id) is not None for p in x.goalies]) +
+                            sum([AthleteHandler.follow_status(athlete_id, p.id) is not None for p in x.referees]),
+                            reverse=True
+                            )
+        print(len(followed_games))
+        return [GameHandler.json_full(g, {'requesting_id': athlete_id}, att_details=True) for g in followed_games]
 
     @staticmethod
     def add(data: dict):
@@ -180,25 +212,29 @@ class GameHandler:
             game_json['organizers'] = []
             for o in organizers:
                 o_json = o.json()
-                o_json = AthleteHandler.add_follower_status(o_json, req_id, o.id)
+                if req_id is not None:
+                    o_json = AthleteHandler.add_follower_status(o_json, req_id, o.id)
                 game_json['organizers'].append(o_json)
 
             game_json['players'] = []
             for p in players:
                 p_json = p.json()
-                p_json = AthleteHandler.add_follower_status(p_json, req_id, p.id)
+                if req_id is not None:
+                    p_json = AthleteHandler.add_follower_status(p_json, req_id, p.id)
                 game_json['players'].append(p_json)
 
             game_json['goalies'] = []
             for g in goalies:
                 g_json = g.json()
-                g_json = AthleteHandler.add_follower_status(g_json, req_id, g.id)
+                if req_id is not None:
+                    g_json = AthleteHandler.add_follower_status(g_json, req_id, g.id)
                 game_json['goalies'].append(g_json)
 
             game_json['referees'] = []
             for r in referees:
                 r_json = r.json()
-                r_json = AthleteHandler.add_follower_status(r_json, req_id, r.id)
+                if req_id is not None:
+                    r_json = AthleteHandler.add_follower_status(r_json, req_id, r.id)
                 game_json['referees'].append(r_json)
 
             game_json['anonym_players'] = [o.json() for o in anonym_players]

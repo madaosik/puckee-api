@@ -101,7 +101,11 @@ class GameForUser(Resource):
 class GameOfUserFollowees(Resource):
     @staticmethod
     def get(athlete_id: int):
-        pass
+        data = request.args
+        if 'game_limit' in data:
+            return GameHandler.fetch_followee_games(athlete_id, int(data['game_limit']))
+        else:
+            return GameHandler.fetch_followee_games(athlete_id)
 
 class GameByDate(Resource):
     @staticmethod
@@ -153,5 +157,5 @@ def configure(api):
     api.add_resource(Game, '/api/game')
     api.add_resource(GameByDate, '/api/game/date')
     api.add_resource(GameForUser, '/api/game/user/<athlete_id>')
-    api.add_resource(GameOfUserFollowees, '/api/game/user/<user_id>/followees')
+    api.add_resource(GameOfUserFollowees, '/api/game/user/<athlete_id>/followees')
     api.add_resource(GameUpdater, '/api/game/<game_id>')

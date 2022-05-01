@@ -105,6 +105,8 @@ class AthleteHandler:
         @return FollowersModel
         """
         # Athlete I follow
+        if follower_id == followee_id:
+            return None
         return FollowersModel.query\
             .filter(FollowersModel.follower.has(id=follower_id))\
             .filter(FollowersModel.followee.has(id=followee_id))\
@@ -119,6 +121,7 @@ class AthleteHandler:
         @param follower_id: int - ID of the person who follows the followee
         @param followee_id: int - ID of the person potentially being followed
         """
+
         follow_rel = AthleteHandler.follow_status(follower_id, followee_id)
         if follow_rel:
             athlete_json['follow'] = {'followed': True, 'opt_out_mode': follow_rel.opt_out_mode}
@@ -190,7 +193,7 @@ class AthleteHandler:
         athlete_json['followers'] = len(athlete_followers)
         # [athlete_json['followers'].append(follower.from_id) for follower in athlete_followers]
 
-        athlete_json = AthleteHandler.add_follower_status(athlete_json, athlete.id, requesting_id)
+        athlete_json = AthleteHandler.add_follower_status(athlete_json, requesting_id, athlete.id)
         # if requesting_id:
         #     follow_rel = AthleteHandler.follow_status(requesting_id, athlete.id)
         #     if follow_rel:

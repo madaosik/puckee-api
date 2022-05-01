@@ -22,10 +22,11 @@ GOALIE_MAX_CNT = 2
 REF_FREQ = 13
 REF_MAX_CNT = 3
 
-# Every athlete follows every 5th athlete
-FOLLOWING_FREQ = 6
-# There is 20% probability that the follow relationship is "opt_out"
-OPT_OUT_MODE_PROB = 0.2
+# Athletes follow from every 3th to every 10th athlete
+FOLLOWING_FREQ_LOWER = 20
+FOLLOWING_FREQ_UPPER = 3
+# There is 10% probability that the follow relationship is "opt_out"
+OPT_OUT_MODE_PROB = 0.1
 
 
 # outputs True or False probabilistically based on the input of a random number from 0 to 1
@@ -129,10 +130,15 @@ def seed_data():
 
     # Seeding follow relationships
     follow_rel = []
+    # Every athlete follows 5-30% random others
+    followees_lbound = int(ATHLETES_CNT/FOLLOWING_FREQ_LOWER)
+    followees_ubound = int(ATHLETES_CNT/FOLLOWING_FREQ_UPPER)
     for i in range(1, ATHLETES_CNT + 1):
-        # Every athlete follows 20% random others
-        followees = random.sample(range(1, ATHLETES_CNT + 1), int(ATHLETES_CNT/FOLLOWING_FREQ))
+        followees = random.sample(range(1, ATHLETES_CNT + 1), random.randrange(followees_lbound, followees_ubound))
         for followee in followees:
+            # An athlete cannot follow himself
+            if i == followee:
+                continue
             rel_dict = {'from_id': i, 'to_id': followee, 'opt_out_mode': decision(OPT_OUT_MODE_PROB)}
             follow_rel.append(rel_dict)
 
