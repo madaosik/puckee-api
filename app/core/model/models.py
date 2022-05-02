@@ -13,6 +13,7 @@ from datetime import datetime, time, date
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 TIME_FORMAT = '%H:%M:%S'
 DATE_FORMAT = '%Y-%m-%d'
+
 GAME_NAME_LEN_LIMIT = 25
 
 sqlDb: SQLAlchemy = SQLAlchemy(session_options={"autoflush": True})
@@ -167,7 +168,9 @@ class AthleteModel(sqlDb.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     password_hash = Column(String(128), nullable=False)
     name = Column(String(50))
+    surname = Column(String(50))
     email = Column(String(50), nullable=False)
+    birth_month = Column(Date)
     last_login = Column(TIMESTAMP)
     last_modified = Column(TIMESTAMP, server_default=func.now(), server_onupdate=func.now())
 
@@ -178,9 +181,7 @@ class AthleteModel(sqlDb.Model):
 
     def __init__(self, email, password):
         self.password_hash = generate_password_hash(password, method='sha256')
-        # self.name = ""
         self.email = email
-        # self.perf_level = perf_level
 
     def json(self):
         try:
@@ -188,13 +189,16 @@ class AthleteModel(sqlDb.Model):
         except AttributeError:
             formatted_last_login = 'null'
         formatted_last_update = self.last_modified.isoformat().strip('"')
-        return {"id": self.id,
-                "email": self.email,
-                "name": self.name,
-                # "perf_level": self.perf_level,
-                "last_login": formatted_last_login,
-                "last_update": formatted_last_update
-                }
+        ret_json = {"id": self.id,
+                    "email": self.email,
+                    "name": self.name,
+                    "surname": self.surname,
+                    "last_login": formatted_last_login,
+                    "last_update": formatted_last_update
+                    }
+        if self.birth_month is not None:
+            ret_json['birth_month'] = datetime.strftime(self.birth_month, DATE_FORMAT)
+        return ret_json
 
 
 class IceRinkModel(sqlDb.Model):

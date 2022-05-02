@@ -2,7 +2,7 @@ from flask_jwt_extended import create_access_token
 
 # from app.core.model.attendance_handler import AthleteRole
 from app.core.model.models import AthleteModel, AthleteRoleModel, AthleteRoleAssociationModel, FollowersModel, \
-    AnonymousAthleteModel, AthleteRole
+    AnonymousAthleteModel, AthleteRole, DATE_FORMAT
 from app.core.db_base import session
 from sqlalchemy import exc as e
 from werkzeug.security import check_password_hash
@@ -37,6 +37,7 @@ class AnonymousAthleteHandler:
             return {"message": "An internal error occurred during registration, please try again!"}, 500
 
         return athlete
+
 
 class AthleteHandler:
     @staticmethod
@@ -177,6 +178,24 @@ class AthleteHandler:
         athlete.__dict__.update(data)
         session.commit()
         return athlete.json()
+
+    @staticmethod
+    def add_athlete_details(data: dict):
+        id = int(data['id'])
+        athlete = AthleteHandler.fetch(id=id)
+        if athlete is None:
+            return {'message': 'Athlete with id ' + id + ' could not be found!'}, 404
+
+        athlete.name=data['name']
+        athlete.surname=data['surname']
+        athlete.birth_month = datetime.strptime(data['birth_month'], DATE_FORMAT)
+        for role in data['roles']:
+            role_assoc = AthleteRoleAssociationModel(role['id'], role['skill_level'])
+            athlete.roles.append(role_assoc)
+
+        session.commit()
+        return AthleteHandler.json_full(athlete, id)
+
 
     @staticmethod
     def json_full(athlete: AthleteModel, requesting_id=None):

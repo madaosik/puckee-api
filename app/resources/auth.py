@@ -6,6 +6,25 @@ from flask_jwt_extended import create_access_token
 
 from app.core.model import AthleteHandler
 
+class AthleteSignUpDetails(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('id', type=int, required=True,
+                        help='Athlete name provided in name')
+    parser.add_argument('name', type=str, required=True,
+                        help='Athlete name provided in name')
+    parser.add_argument('surname', type=str, required=True,
+                        help='Athlete name provided in name')
+    parser.add_argument('birth_month', type=str, required=True,
+                        help='Please provide athlete email')
+    parser.add_argument('roles', type=dict, action='append', required=True,
+                        help='Please provide roles and skill dictionary in \'roles\'')
+
+    @staticmethod
+    def post():
+        data = AthleteSignUpDetails.parser.parse_args()
+        app.logger.info(f'parsed args: {data}')
+        return AthleteHandler.add_athlete_details(data)
+
 
 class AthleteSignUp(Resource):
     parser = reqparse.RequestParser()
@@ -48,3 +67,4 @@ class AthleteLogin(Resource):
 def configure(api):
     api.add_resource(AthleteSignUp, '/api/auth/signup')
     api.add_resource(AthleteLogin, '/api/auth/login')
+    api.add_resource(AthleteSignUpDetails, '/api/auth/signup-details')

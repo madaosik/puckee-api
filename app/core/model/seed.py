@@ -64,12 +64,14 @@ def seed_data():
 
     passwd = 'passwd'
     athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
-                    'name': 'Adam Tester',
+                    'name': 'Adam',
+                    'surname': 'Tester',
                     'email': 'a@a.com',
                     }
     athletes.append(athlete_dict)
     athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
-                    'name': 'Adam Bi-roled',
+                    'name': 'Adam',
+                    'surname': 'Bi-roled',
                     'email': 'b@b.com',
                     }
     athletes.append(athlete_dict)
@@ -77,7 +79,9 @@ def seed_data():
     for i in range(3, ATHLETES_CNT + 1):
         passwd = 'pass' + str(i)
         athlete_dict = {'password_hash': generate_password_hash(passwd, method='sha256'),
-                        'name': fake.name(),
+                        'name': fake.first_name(),
+                        'surname': fake.last_name(),
+                        # 'birth_month':
                         'email': fake.ascii_email(),
                         }
         athletes.append(athlete_dict)
