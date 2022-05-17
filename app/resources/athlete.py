@@ -74,7 +74,7 @@ class AthleteSearch(Resource):
     def get():
         """
         Requires 'name', 'role_id' and 'requesting_id' (to identify the follow relationship) request arguments
-        Additional parameters can be 'followee_id', 'opt_out_mode'
+        Additional parameters can be 'followers_only', 'opt_out_mode'
         """
         data = request.args
         if 'name' not in data:
